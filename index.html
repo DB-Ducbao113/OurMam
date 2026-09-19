@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>OurMam - Food Locket</title>
+  
+  <!-- PWA & iOS Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OurMam">
+  <meta name="theme-color" content="#FAF8F5">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3075/3075977.png">
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#ac340a",
+            "primary-container": "#ff6f43",
+            "primary-fixed": "#ffdbd1",
+            "primary-fixed-dim": "#ffb59f",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#641700",
+            "on-primary-fixed": "#3a0a00",
+            "on-primary-fixed-variant": "#862300",
+            "secondary": "#9d440b",
+            "secondary-container": "#fe8d52",
+            "secondary-fixed": "#ffdbcc",
+            "secondary-fixed-dim": "#ffb693",
+            "on-secondary": "#ffffff",
+            "background": "#FAF8F5",
+            "surface": "#fff8f6",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#fff1eb",
+            "surface-container": "#faebe4",
+            "surface-container-high": "#f4e5df",
+            "surface-container-highest": "#efdfd9",
+            "on-surface": "#211a16",
+            "on-surface-variant": "#59413b",
+            "tertiary": "#665c59",
+            "tertiary-container": "#a59995",
+            "tertiary-fixed": "#eedfdb",
+            "tertiary-fixed-dim": "#d1c4bf",
+            "outline": "#8d7169",
+            "outline-variant": "#e1bfb6",
+            "inverse-surface": "#372f2a",
+            "inverse-on-surface": "#fdeee7"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "margin": "1.25rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.25rem"
+          },
+          fontFamily: {
+            "sans": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"]
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Modular Stylesheets -->
+  <link rel="stylesheet" href="src/styles/main.css">
+  <link rel="stylesheet" href="src/styles/animations.css">
+  <link rel="stylesheet" href="src/styles/components.css">
+
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-[#FAF8F5] text-on-surface antialiased min-h-screen flex flex-col items-center justify-start selection:bg-primary-fixed selection:text-primary">
+
+  <!-- ==========================================
+       AUTHENTICATION CONTAINER (LOGIN / SIGNUP)
+       ========================================== -->
+  <div id="auth-container" class="w-full flex justify-center items-center">
+    <!-- Rendered dynamically via AuthViewComponent -->
+  </div>
+
+  <!-- ==========================================
+       MAIN APP CONTAINER (Mobile Frame & Responsive)
+       ========================================== -->
+  <div id="app-container" class="hidden w-full max-w-[540px] min-h-screen bg-[#FAF8F5] flex flex-col relative md:my-6 md:rounded-[2.5rem] md:border md:border-[#F0EAE1] md:shadow-2xl overflow-hidden pb-24">
+
+    <!-- ==================== TOP APP BAR ==================== -->
+    <header class="fixed top-0 inset-x-0 mx-auto w-full max-w-[540px] md:absolute z-40 flex items-center justify-between px-margin py-3 bg-surface/90 backdrop-blur-md border-b border-outline-variant/20 shadow-sm md:rounded-t-[2.5rem]">
+      
+      <!-- Profile Info & Switcher Button -->
+      <div id="profile-switcher-btn" class="flex items-center space-x-2.5 cursor-pointer active:scale-95 transition-transform duration-150">
+        <div class="relative">
+          <img id="current-user-avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary-container/40" src="https://ui-avatars.com/api/?name=User&background=FF7A53&color=fff&bold=true&size=150" alt="Avatar">
+          <!-- Flame Streak Badge -->
+          <span id="header-streak-badge" class="absolute -bottom-1 -right-1 bg-surface-container-lowest text-primary rounded-full px-1.5 py-0.2 shadow-sm border border-outline-variant/40 flex items-center justify-center text-[10px] font-bold">
+            🔥 0
+          </span>
+          <!-- Online Indicator -->
+          <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-surface-container-lowest"></span>
+        </div>
+        
+        <div class="flex flex-col text-left justify-center">
+          <div class="flex items-center space-x-1">
+            <span id="current-user-name" class="text-sm font-bold text-on-surface">Bạn 🌸</span>
+            <span class="material-symbols-outlined text-tertiary text-sm">expand_more</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Logo (Visible on wider screen) -->
+      <div class="hidden sm:flex items-center gap-1.5">
+        <div class="w-7 h-7 rounded-lg bg-white p-1 shadow-sm border border-orange-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="100 110 312 235" class="w-full h-full drop-shadow-sm">
+            <defs>
+              <linearGradient id="hdrPeach" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FF7A53"/>
+                <stop offset="100%" stop-color="#E85324"/>
+              </linearGradient>
+            </defs>
+            <path d="M256 168 C240 128 175 120 152 165 C132 205 160 252 256 312 C256 312 250 262 250 220 C250 178 256 168 256 168 Z" fill="url(#hdrPeach)"/>
+            <path d="M256 168 C272 128 337 120 360 165 C380 205 352 252 256 312 C256 312 262 262 262 220 C262 178 256 168 256 168 Z" fill="#FF8A3D"/>
+            <ellipse cx="206" cy="190" rx="20" ry="28" fill="#FFFFFF" transform="rotate(-15 206 190)"/>
+            <path d="M202 216 Q206 250 216 270" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <path d="M296 172 L296 200 M306 168 L306 200 M316 172 L316 200" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"/>
+            <path d="M292 200 C292 214 320 214 320 200" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+            <path d="M306 210 Q304 246 296 270" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <circle cx="256" cy="216" r="14" fill="#FFFFFF"/>
+            <path d="M256 210 C254 206 250 204 247 206 C243 209 243 214 247 218 L256 226 L265 218 C269 214 269 209 265 206 C262 204 258 206 256 210 Z" fill="#E85324"/>
+          </svg>
+        </div>
+        <span class="text-sm font-extrabold text-primary tracking-tight">OurMam</span>
+      </div>
+
+      <!-- Trailing Action Cluster -->
+      <div class="flex items-center space-x-1.5">
+        <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high" title="Chia sẻ Widget">
+          <span class="material-symbols-outlined text-lg">ios_share</span>
+        </button>
+      </div>
+    </header>
+
+
+    <!-- ==============================================================
+         TAB 1: LỊCH SỬ BỮA ĂN (CALENDAR & MEMORIES)
+         ============================================================== -->
+    <div id="tab-calendar" class="tab-pane flex-col w-full px-margin pt-20 space-y-space-md">
+      
+      <!-- Summary Header -->
+      <div class="flex items-center justify-between bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/30 soft-tactile-shadow">
+        <div class="flex items-center gap-3">
+          <div id="cal-avatars-cluster" class="relative flex items-center">
+            <img id="cal-user-avatar" class="w-9 h-9 rounded-full ring-2 ring-white object-cover" src="https://ui-avatars.com/api/?name=User&background=FF7A53&color=fff&bold=true&size=100" alt="Avatar">
+            <span id="cal-partner-avatar-wrapper" class="hidden">
+              <img id="cal-partner-avatar" class="w-9 h-9 rounded-full ring-2 ring-white object-cover -ml-3" src="" alt="Partner">
+            </span>
+            <button id="btn-cal-add-partner" type="button" class="w-7 h-7 rounded-full bg-orange-100 text-primary flex items-center justify-center -ml-2.5 ring-2 ring-white text-xs font-bold active:scale-90 transition-transform shadow-xs" title="Ghép đôi / Kết bạn">
+              <span class="material-symbols-outlined text-sm">add</span>
+            </button>
+          </div>
+          <div>
+            <h2 id="cal-header-title" class="text-sm font-bold text-on-surface">Nhật Ký Bữa Ăn</h2>
+            <p class="text-[11px] text-tertiary"><span id="cal-streak-text">0</span> ngày liên tục ✨</p>
+          </div>
+        </div>
+        <div class="bg-surface-container px-3 py-1 rounded-full text-xs font-bold text-primary flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm filled">restaurant</span>
+          <span id="cal-total-meals">0 món</span>
+        </div>
+      </div>
+
+      <!-- Month Navigation & Calendar Card -->
+      <div class="bg-surface-container-lowest rounded-3xl p-4 border border-outline-variant/30 soft-tactile-shadow">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div class="flex items-center gap-2">
+            <h3 id="current-month-label" class="text-base font-bold text-on-surface">Tháng này</h3>
+            <span id="month-moments-count" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary-fixed text-on-primary-fixed-variant">0 khoảnh khắc</span>
+          </div>
+          <div class="flex items-center gap-1 bg-surface-container-low rounded-full p-1 border border-outline-variant/30">
+            <button id="btn-prev-month" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button id="btn-next-month" class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 gap-1.5 text-center mb-2">
+          <span class="text-[11px] text-tertiary font-bold">T2</span>
+          <span class="text-[11px] text-tertiary font-bold">T3</span>
+          <span class="text-[11px] text-tertiary font-bold">T4</span>
+          <span class="text-[11px] text-tertiary font-bold">T5</span>
+          <span class="text-[11px] text-tertiary font-bold">T6</span>
+          <span class="text-[11px] text-tertiary font-bold">T7</span>
+          <span class="text-[11px] text-primary font-bold">CN</span>
+        </div>
+
+        <!-- Dynamic Calendar Grid -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5">
+          <!-- Rendered via CalendarViewComponent -->
+        </div>
+      </div>
+
+      <!-- Selected Day Meals Stream -->
+      <div class="flex flex-col space-y-2">
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+            <h3 id="selected-date-heading" class="text-sm font-bold text-on-surface">Khoảnh khắc hôm nay</h3>
+          </div>
+          <span id="selected-date-count" class="text-xs text-tertiary font-medium">0 món ngon</span>
+        </div>
+
+        <!-- Horizontal Scrollable Meal Cards -->
+        <div id="selected-date-meals" class="flex gap-3 overflow-x-auto hide-scrollbar py-2">
+          <!-- Rendered via CalendarViewComponent -->
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==============================================================
+         TAB 2: CAMERA & LOCKET PHOTO FEED (MAIN DEFAULT TAB)
+         ============================================================== -->
+    <div id="tab-camera" class="tab-pane active flex-col w-full px-margin pt-20 space-y-4">
+      
+      <!-- 1. CAMERA & CAPTURE SECTION (ON TOP LIKE LOCKET) -->
+      <section class="w-full bg-surface-container-lowest rounded-3xl p-4 border border-outline-variant/30 pillowed-card flex flex-col space-y-3.5 shadow-sm">
+        
+        <!-- Section Header -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 rounded-full bg-primary flex items-center justify-center">
+              <div class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+            </div>
+            <h3 id="camera-section-title" class="text-sm font-bold text-on-surface">Chụp ảnh bữa ăn hôm nay</h3>
+          </div>
+        </div>
+
+        <!-- Meal Category Tag Selector -->
+        <div id="meal-tag-container" class="flex items-center justify-between bg-surface-container-low p-1 rounded-full border border-outline-variant/20">
+          <button type="button" class="meal-tag-btn flex-1 py-1.5 rounded-full text-xs font-semibold text-tertiary hover:text-on-surface transition-all" data-tag="breakfast">
+            ☀️ Sáng
+          </button>
+          <button type="button" class="meal-tag-btn active flex-1 py-1.5 rounded-full text-xs font-bold bg-surface-container-lowest text-primary shadow-sm transition-all" data-tag="lunch">
+            🍱 Trưa
+          </button>
+          <button type="button" class="meal-tag-btn flex-1 py-1.5 rounded-full text-xs font-semibold text-tertiary hover:text-on-surface transition-all" data-tag="dinner">
+            🌙 Tối
+          </button>
+          <button type="button" class="meal-tag-btn flex-1 py-1.5 rounded-full text-xs font-semibold text-tertiary hover:text-on-surface transition-all" data-tag="snack">
+            🧋 Ăn Vặt
+          </button>
+        </div>
+
+        <!-- Live Viewfinder Frame -->
+        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-black flex items-center justify-center border-2 border-primary/20 shadow-inner group">
+          <video id="camera-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+          <img id="camera-captured-preview" class="hidden w-full h-full object-cover" alt="Captured photo">
+
+          <!-- Focus Reticle Overlay -->
+          <div id="camera-reticle" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div class="w-20 h-20 border border-white/60 rounded-xl relative flex items-center justify-center">
+              <span class="material-symbols-outlined text-white/70 text-lg">filter_center_focus</span>
+              <span class="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-primary-fixed"></span>
+              <span class="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-primary-fixed"></span>
+              <span class="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-primary-fixed"></span>
+              <span class="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-primary-fixed"></span>
+            </div>
+          </div>
+
+          <!-- Badges & Controls -->
+          <div class="absolute top-2.5 left-2.5 bg-black/50 backdrop-blur-sm text-white text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 font-semibold">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+            <span id="camera-mode-text">LIVE</span>
+          </div>
+
+          <div class="absolute top-2.5 right-2.5 flex space-x-1.5">
+            <button id="btn-flash" class="p-1.5 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors" title="Bật/Tắt Flash">
+              <span class="material-symbols-outlined text-sm">flash_on</span>
+            </button>
+            <button id="btn-retake" class="hidden p-1.5 rounded-full bg-black/60 backdrop-blur-sm text-amber-300 hover:bg-black/80 transition-colors" title="Chụp lại">
+              <span class="material-symbols-outlined text-sm">replay</span>
+            </button>
+          </div>
+
+          <div id="camera-hint" class="absolute bottom-2.5 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/90 text-[11px] font-medium">
+            Chạm để lấy nét món ăn 🍲
+          </div>
+        </div>
+
+        <!-- Caption Input Box -->
+        <div class="flex flex-col space-y-1.5">
+          <div class="flex items-center space-x-2 bg-surface-container-low rounded-xl px-3.5 py-2 border border-outline-variant/30 focus-within:border-primary focus-within:bg-white transition-all">
+            <span class="material-symbols-outlined text-primary text-base">edit_note</span>
+            <input id="input-meal-caption" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-on-surface placeholder:text-tertiary/70 w-full" placeholder="Nhập tên món ăn hôm nay..." type="text">
+          </div>
+        </div>
+
+        <!-- Controls: Gallery, Big Shutter, Flip Camera -->
+        <div class="flex items-center justify-around pt-1">
+          <!-- Gallery Import -->
+          <label class="w-12 h-12 rounded-full bg-surface-container-low hover:bg-surface-container flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-all border border-outline-variant/30 cursor-pointer" title="Chọn từ thư viện">
+            <input type="file" id="file-input-gallery" accept="image/*" class="hidden">
+            <span class="material-symbols-outlined text-2xl">photo_library</span>
+          </label>
+
+          <!-- Big Shutter Button -->
+          <div class="relative p-1.5 rounded-full border-2 border-primary/40 flex items-center justify-center">
+            <button id="btn-shutter" aria-label="Chụp ảnh món ăn" class="w-16 h-16 rounded-full bg-primary hover:bg-orange-700 text-white flex items-center justify-center shadow-md active:scale-90 transition-all group">
+              <div class="w-12 h-12 rounded-full border-2 border-white/60 flex items-center justify-center">
+                <span id="shutter-icon" class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform filled">photo_camera</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Flip Camera -->
+          <button id="btn-flip-camera" class="w-12 h-12 rounded-full bg-surface-container-low hover:bg-surface-container flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-all border border-outline-variant/30" title="Đổi camera trước/sau">
+            <span class="material-symbols-outlined text-2xl">flip_camera_ios</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. LOCKET PHOTO FEED SECTION (LƯỚT XUỐNG RA ẢNH NHƯ LOCKET) -->
+      <section id="locket-feed-section" class="w-full flex flex-col space-y-3.5 pb-8">
+        
+        <!-- Feed Header & Person Filter (Everyone / Partner / Me) -->
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-base">photo_library</span>
+            <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">Khoảnh khắc Locket</h3>
+          </div>
+
+          <!-- Filter Pills -->
+          <div id="locket-feed-filter-bar" class="flex items-center gap-1 bg-surface-container-low p-0.5 rounded-full border border-outline-variant/30">
+            <button type="button" class="feed-filter-btn active px-2.5 py-1 rounded-full text-[11px] font-bold bg-white text-primary shadow-xs transition-all flex items-center gap-1" data-filter="all">
+              <span>Tất cả</span>
+            </button>
+            <button type="button" class="feed-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-tertiary hover:text-on-surface transition-all flex items-center gap-1" data-filter="partner" id="filter-btn-partner">
+              <span id="filter-partner-label">Người ấy</span>
+            </button>
+            <button type="button" class="feed-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-tertiary hover:text-on-surface transition-all flex items-center gap-1" data-filter="me">
+              <span>Tôi</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Photo Cards Container -->
+        <div id="locket-feed-cards" class="w-full flex flex-col space-y-4">
+          <!-- Rendered dynamically via LocketFeedComponent -->
+        </div>
+
+        <!-- Empty Feed State -->
+        <div id="locket-feed-empty" class="hidden w-full bg-surface-container-lowest rounded-3xl p-6 border border-orange-200/60 text-center flex flex-col items-center space-y-2.5 shadow-xs">
+          <div class="w-16 h-16 rounded-2xl bg-orange-100/70 flex items-center justify-center text-3xl">
+            🍱
+          </div>
+          <h4 id="locket-empty-title" class="text-xs font-bold text-on-surface">Chưa có ảnh nào hôm nay</h4>
+          <p id="locket-empty-desc" class="text-[11px] text-tertiary max-w-[260px] leading-relaxed">
+            Hãy chụp món ăn đầu tiên của bạn ở khung camera bên trên để gửi qua Locket nhé!
+          </p>
+          <button id="btn-feed-empty-action" type="button" class="mt-1 px-4 py-1.5 rounded-full bg-primary text-white text-xs font-bold active:scale-95 transition-transform shadow-xs">
+            Chụp món ngay
+          </button>
+        </div>
+
+      </section>
+    </div>
+
+
+    <!-- ==============================================================
+         TAB 3: TRÒ CHUYỆN BỮA ĂN (CHAT & FOOD MOMENTS)
+         ============================================================== -->
+    <div id="tab-chat" class="tab-pane flex-col w-full px-margin pt-20 space-y-3">
+      <!-- Rendered dynamically via ChatViewComponent -->
+    </div>
+
+
+    <!-- ==================== BOTTOM NAVIGATION BAR ==================== -->
+    <nav class="fixed bottom-0 inset-x-0 mx-auto w-full max-w-[540px] md:absolute z-50 grid grid-cols-3 items-center px-4 py-2 bg-surface-container-lowest border-t border-outline-variant/30 rounded-t-2xl md:rounded-b-[2.5rem] shadow-[0px_-4px_16px_-2px_rgba(74,62,57,0.06)]">
+      
+      <!-- Tab 1 Button: Lịch sử -->
+      <button id="nav-btn-calendar" class="nav-item flex flex-col items-center justify-center text-tertiary py-1.5 px-3 rounded-2xl hover:text-primary transition-all active:scale-95 mx-auto w-full max-w-[110px]" data-target="tab-calendar">
+        <span class="material-symbols-outlined text-2xl">history_toggle_off</span>
+        <span class="text-[11px] font-semibold mt-0.5">Lịch sử</span>
+      </button>
+
+      <!-- Tab 2 Button: Home (Center Main Action) -->
+      <button id="nav-btn-camera" class="nav-item active flex flex-col items-center justify-center bg-primary-fixed text-primary font-bold rounded-2xl py-1.5 px-3 mx-auto active:scale-95 transition-all w-full max-w-[110px] shadow-xs" data-target="tab-camera">
+        <span class="material-symbols-outlined text-2xl filled">home</span>
+        <span class="text-[11px] font-bold mt-0.5">Home</span>
+      </button>
+
+      <!-- Tab 3 Button: Trò chuyện -->
+      <button id="nav-btn-chat" class="nav-item flex flex-col items-center justify-center text-tertiary py-1.5 px-3 rounded-2xl hover:text-primary transition-all active:scale-95 relative mx-auto w-full max-w-[110px]" data-target="tab-chat">
+        <span class="material-symbols-outlined text-2xl">forum</span>
+        <span id="chat-unread-dot" class="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-primary-container ring-1 ring-surface-container-lowest"></span>
+        <span class="text-[11px] font-semibold mt-0.5">Trò chuyện</span>
+      </button>
+    </nav>
+
+  </div>
+
+
+  <!-- ==============================================================
+       MODAL 1: CÀI ĐẶT TÀI KHOẢN & KẾT NỐI (SETTINGS & PROFILE)
+       ============================================================== -->
+  <div id="profile-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-end md:justify-center p-0 md:p-4 transition-opacity">
+    <div class="bg-[#FAF8F5] w-full max-w-[540px] h-[95vh] md:h-[90vh] rounded-t-[2.25rem] md:rounded-[2.25rem] border border-stone-200/80 shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+      
+      <!-- Top App Bar Navigation in Settings -->
+      <header class="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3.5 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-stone-200/60 sticky top-0 z-20">
+        <div class="flex items-center gap-2.5">
+          <button id="btn-close-profile-modal" aria-label="Quay lại" class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-stone-700 hover:bg-stone-100 active:scale-95 transition-all shadow-2xs border border-stone-200/60 cursor-pointer" type="button">
+            <span class="material-symbols-outlined text-xl">arrow_back</span>
+          </button>
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-stone-900 leading-tight">Cài Đặt Tài Khoản</h2>
+            <p class="text-[11px] text-stone-500 font-medium">OurMam • Không gian ẩm thực đôi</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btn-open-settings-help" aria-label="Hướng dẫn" class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-[#FF6433] hover:bg-orange-50 active:scale-95 transition-all shadow-2xs border border-orange-200/60 cursor-pointer" title="Hướng dẫn sử dụng">
+            <span class="material-symbols-outlined text-xl">help_outline</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Settings Container -->
+      <div id="profiles-list-container" class="flex-1 overflow-y-auto px-4 sm:px-5 py-4 flex flex-col gap-4">
+        <!-- Rendered via ModalsComponent -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Submodal: Widget Installation Guide -->
+  <div id="widget-guide-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center">
+            <span class="material-symbols-outlined text-base">widgets</span>
+          </div>
+          <h3 class="text-sm font-bold text-stone-900">Cách Thêm Ra Màn Hình Chính</h3>
+        </div>
+        <button id="btn-close-widget-guide" type="button" class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-stone-600">
+        <!-- iOS Guide -->
+        <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
+          <div class="flex items-center gap-1.5 font-bold text-stone-900">
+            <span>🍏 Trên iPhone (Safari)</span>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-0.5">
+            <li>Mở bằng <b>Safari</b> trên iPhone.</li>
+            <li>Bấm nút <b>Chia sẻ</b> (biểu tượng <span class="material-symbols-outlined text-xs inline">ios_share</span> ở dưới cùng).</li>
+            <li>Chọn <b>"Thêm vào MH chính"</b> (Add to Home Screen).</li>
+            <li>Bấm <b>"Thêm"</b> để dùng như ứng dụng gốc!</li>
+          </ol>
+        </div>
+
+        <!-- Android Guide -->
+        <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
+          <div class="flex items-center gap-1.5 font-bold text-stone-900">
+            <span>🤖 Trên Android (Chrome)</span>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-0.5">
+            <li>Mở bằng <b>Google Chrome</b>.</li>
+            <li>Bấm menu <b>3 chấm ⋮</b> góc trên phải.</li>
+            <li>Chọn <b>"Cài đặt ứng dụng"</b> hoặc <b>"Thêm vào Màn hình chính"</b>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <button id="btn-confirm-widget-guide" type="button" class="w-full py-2.5 bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs rounded-xl shadow-md active:scale-98 transition-all">
+        Đã hiểu
+      </button>
+    </div>
+  </div>
+
+  <!-- Submodal: App Guide for New Users -->
+  <div id="settings-help-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center">
+            <span class="material-symbols-outlined text-base">menu_book</span>
+          </div>
+          <h3 class="text-sm font-bold text-stone-900">Hướng Dẫn Cho Người Mới</h3>
+        </div>
+        <button id="btn-close-settings-help" type="button" class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 text-xs text-stone-600">
+        <div class="p-2.5 bg-orange-50/60 rounded-xl border border-orange-100 flex items-start gap-2.5">
+          <span class="text-xl">📸</span>
+          <div>
+            <h4 class="font-bold text-stone-900 text-xs">1. Chụp ảnh món ngon</h4>
+            <p class="text-[11px] text-stone-500 mt-0.5">Dùng camera chụp đĩa cơm, ly trà sữa hoặc bữa ăn hàng ngày.</p>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100 flex items-start gap-2.5">
+          <span class="text-xl">💌</span>
+          <div>
+            <h4 class="font-bold text-stone-900 text-xs">2. Gửi locket đến người thương</h4>
+            <p class="text-[11px] text-stone-500 mt-0.5">Ảnh sẽ xuất hiện ngay lập tức trên feed và widget của người ấy.</p>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 flex items-start gap-2.5">
+          <span class="text-xl">🔥</span>
+          <div>
+            <h4 class="font-bold text-stone-900 text-xs">3. Tích streak ăn cùng nhau</h4>
+            <p class="text-[11px] text-stone-500 mt-0.5">Mỗi ngày chụp ít nhất 1 bữa để tích lũy chuỗi ngày yêu thương.</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-confirm-settings-help" type="button" class="w-full py-2.5 bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs rounded-xl shadow-md active:scale-98 transition-all">
+        Bắt đầu ngay
+      </button>
+    </div>
+  </div>
+
+  <!-- Submodal: Privacy Info -->
+  <div id="privacy-info-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center">
+            <span class="material-symbols-outlined text-base">lock</span>
+          </div>
+          <h3 class="text-sm font-bold text-stone-900">Quyền Riêng Tư Đôi</h3>
+        </div>
+        <button id="btn-close-privacy-info" type="button" class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+
+      <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 text-xs text-stone-600 space-y-2 leading-relaxed">
+        <p>🔒 <b>Chỉ bạn và người ấy:</b> Mọi hình ảnh món ăn, caption và tin nhắn được lưu trữ an toàn.</p>
+        <p>✨ <b>Không công khai:</b> Những khoảnh khắc này chỉ hiển thị cho người bạn đã đồng ý kết nối qua mã MAM.</p>
+      </div>
+
+      <button id="btn-confirm-privacy-info" type="button" class="w-full py-2.5 bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs rounded-xl shadow-md active:scale-98 transition-all">
+        Đã hiểu
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ==============================================================
+       MODAL 2: PHOTO DETAIL / HIGH-RES EXPANDED VIEW
+       ============================================================== -->
+  <div id="photo-detail-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center p-4">
+    <div class="relative w-full max-w-[480px] bg-surface-container-lowest rounded-3xl overflow-hidden soft-tactile-shadow flex flex-col">
+      <button id="btn-close-photo-modal" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-sm active:scale-90">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+
+      <div class="w-full aspect-square bg-black">
+        <img id="detail-modal-img" class="w-full h-full object-cover" src="" alt="Detail meal">
+      </div>
+
+      <div class="p-4 flex flex-col space-y-2 bg-surface-container-lowest">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <img id="detail-modal-avatar" class="w-8 h-8 rounded-full object-cover ring-1 ring-primary/30" src="" alt="Avatar">
+            <div>
+              <h4 id="detail-modal-author" class="text-xs font-bold text-on-surface">Người dùng</h4>
+              <p id="detail-modal-time" class="text-[10px] text-tertiary">Vừa xong</p>
+            </div>
+          </div>
+          <span id="detail-modal-tag" class="px-2.5 py-0.5 rounded-full bg-primary-fixed text-primary text-[11px] font-bold">🍱 Bữa Ăn</span>
+        </div>
+        <p id="detail-modal-caption" class="text-xs text-on-surface font-medium leading-relaxed">
+          “Khoảnh khắc bữa ăn 🍲”
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       MODAL 3: ĐẶT BIỆT DANH (SET CUSTOM NICKNAME FOR FRIEND / COUPLE)
+       ============================================================== -->
+  <div id="nickname-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-200/80 flex flex-col gap-4 relative animate-scale-up">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-2xl bg-orange-100 text-[#FF6433] flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">edit_note</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-stone-900">Đặt Biệt Danh</h3>
+            <p id="nickname-modal-subtitle" class="text-[11px] text-stone-500">Cho bạn bè hoặc người thương</p>
+          </div>
+        </div>
+        <button id="btn-close-nickname-modal" type="button" class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center cursor-pointer active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <!-- Partner Profile Preview -->
+      <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
+        <img id="nickname-modal-avatar" class="w-11 h-11 rounded-full object-cover ring-2 ring-orange-200" src="" alt="Avatar">
+        <div class="min-w-0 flex-1 text-left">
+          <div class="flex items-center gap-1.5">
+            <p id="nickname-modal-realname" class="text-xs font-bold text-stone-800 truncate">Tên tài khoản</p>
+            <span id="nickname-modal-badge" class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-rose-100 text-rose-600">💕</span>
+          </div>
+          <p id="nickname-modal-current" class="text-[11px] text-[#FF6433] font-semibold truncate mt-0.5">Chưa có biệt danh</p>
+        </div>
+      </div>
+
+      <!-- Input Form -->
+      <div>
+        <label class="block text-[10px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+          Biệt danh hiển thị (Tối đa 25 ký tự)
+        </label>
+        <input id="input-nickname-text" type="text" maxlength="25" class="w-full px-3.5 py-2.5 bg-white border border-orange-200 focus:border-[#FF6433] focus:ring-2 focus:ring-orange-200 rounded-xl text-xs font-bold text-stone-900 focus:outline-none placeholder:font-normal placeholder:text-stone-400 transition-all" placeholder="vd: Em bé, Gấu béo, Cục cưng... 💕">
+      </div>
+
+      <!-- Quick Suggestion Chips -->
+      <div>
+        <p class="text-[10px] text-stone-400 font-semibold mb-1.5">Gợi ý nhanh dễ thương:</p>
+        <div class="flex flex-wrap gap-1.5" id="nickname-suggestions">
+          <button type="button" data-val="💕 Em Bé" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold border border-rose-200 cursor-pointer active:scale-95 transition-all">💕 Em Bé</button>
+          <button type="button" data-val="🐻 Gấu Béo" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 cursor-pointer active:scale-95 transition-all">🐻 Gấu Béo</button>
+          <button type="button" data-val="💖 Cục Cưng" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-orange-50 hover:bg-orange-100 text-[#FF6433] font-bold border border-orange-200 cursor-pointer active:scale-95 transition-all">💖 Cục Cưng</button>
+          <button type="button" data-val="👑 Nóc Nhà" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold border border-purple-200 cursor-pointer active:scale-95 transition-all">👑 Nóc Nhà</button>
+          <button type="button" data-val="🥑 Bạn Thân" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 cursor-pointer active:scale-95 transition-all">🥑 Bạn Thân</button>
+          <button type="button" data-val="✨ Bạn Cùng Bàn Ăn" class="chip-nickname text-[11px] px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 cursor-pointer active:scale-95 transition-all">✨ Bạn Cùng Bàn Ăn</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+        <button id="btn-delete-nickname" type="button" class="text-xs text-stone-400 hover:text-red-500 font-semibold cursor-pointer transition-colors">
+          Xóa biệt danh
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="btn-cancel-nickname" type="button" class="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold cursor-pointer active:scale-95 transition-all">
+            Hủy
+          </button>
+          <button id="btn-save-nickname" type="button" class="px-4 py-2 rounded-xl bg-[#FF6433] hover:bg-orange-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">check</span>
+            <span>Lưu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submodal: Edit Display Name Modal (Đổi tên hiển thị tài khoản) -->
+  <div id="edit-name-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-orange-200/80 flex flex-col gap-4 relative animate-scale-up">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-orange-100 text-[#FF6433] flex items-center justify-center shadow-xs">
+            <span class="material-symbols-outlined text-xl">badge</span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-stone-900">Đổi Tên Hiển Thị</h3>
+            <p class="text-[11px] text-stone-500">Tên tài khoản của bạn trên OurMam</p>
+          </div>
+        </div>
+        <button id="btn-close-edit-name-modal" type="button" class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center cursor-pointer active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <!-- Current Profile Info Preview -->
+      <div class="flex items-center gap-3 p-3 bg-orange-50/50 rounded-2xl border border-orange-100">
+        <img id="edit-name-avatar-preview" class="w-11 h-11 rounded-full object-cover ring-2 ring-orange-200 shadow-xs" src="" alt="Avatar">
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Tên hiện tại</p>
+          <p id="edit-name-current-text" class="text-xs sm:text-sm font-bold text-stone-900 truncate">Bạn</p>
+        </div>
+      </div>
+
+      <!-- Input Form -->
+      <div class="flex flex-col gap-1.5">
+        <label for="input-edit-name-modal-text" class="block text-[11px] font-bold text-stone-700 uppercase tracking-wider">
+          Tên hiển thị mới (Tối đa 30 ký tự)
+        </label>
+        <div class="relative">
+          <input id="input-edit-name-modal-text" type="text" maxlength="30" class="w-full h-12 px-4 py-2.5 bg-white border-2 border-orange-200 focus:border-[#FF6433] focus:ring-4 focus:ring-orange-100 rounded-xl text-sm font-bold text-stone-900 focus:outline-none placeholder:font-normal placeholder:text-stone-400 transition-all shadow-2xs" placeholder="Nhập tên mới của bạn...">
+        </div>
+        <p class="text-[11px] text-stone-500 leading-snug">
+          💡 Tên này sẽ hiển thị với người yêu, bạn bè và trên widget bàn ăn của bạn.
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-100">
+        <button id="btn-cancel-edit-name-modal" type="button" class="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs sm:text-sm font-semibold cursor-pointer active:scale-95 transition-all">
+          Hủy
+        </button>
+        <button id="btn-save-edit-name-modal" type="button" class="px-5 py-2.5 rounded-xl bg-[#FF6433] hover:bg-orange-600 text-white text-xs sm:text-sm font-bold shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm">check</span>
+          <span>Lưu thay đổi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular Frontend Entry Point (with cache-buster) -->
+  <script type="module" src="src/main.js?v=2026091982"></script>
+</body>
+</html>
