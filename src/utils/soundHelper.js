@@ -1,33 +1,34 @@
 /**
  * ==============================================================================
- * SOUND & HAPTIC FEEDBACK HELPER
+ * SOUND HELPER (MUTED / SILENT NO-OP)
+ * All audio playback completely removed as requested
  * ==============================================================================
  */
 
 class SoundHelper {
   constructor() {
-    this.enabled = true;
-    this.shutterAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3');
-    this.popAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3');
+    this.enabled = false;
+  }
+
+  isEnabled() {
+    return false;
+  }
+
+  setEnabled() {
+    this.enabled = false;
+    return false;
   }
 
   toggle() {
-    this.enabled = !this.enabled;
-    return this.enabled;
+    return false;
   }
 
   playShutter() {
-    if (!this.enabled) return;
-    this.shutterAudio.currentTime = 0;
-    this.shutterAudio.play().catch(() => {});
-    if (navigator.vibrate) navigator.vibrate(50);
+    // Sound completely disabled
   }
 
   playPop() {
-    if (!this.enabled) return;
-    this.popAudio.currentTime = 0;
-    this.popAudio.play().catch(() => {});
-    if (navigator.vibrate) navigator.vibrate(30);
+    // Sound completely disabled
   }
 }
 

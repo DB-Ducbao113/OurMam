@@ -368,6 +368,13 @@ class ApiService {
         method: 'PATCH',
         body: JSON.stringify(payload)
       });
+      // Synchronize past meals so widgets and feed immediately show the updated name
+      if (updates.display_name) {
+        this.dbQuery(`meals?user_id=eq.${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ user_name: updates.display_name })
+        }).catch(err => console.warn("meals user_name sync warning:", err));
+      }
       const updated = data?.[0] || { id: userId, ...payload };
       const known = this.getLocal('ourmam_known_profiles', {});
       known[userId] = { ...(known[userId] || {}), ...updated };
@@ -637,6 +644,35 @@ class ApiService {
     }
   }
 
+  async deleteMeal(mealId) {
+    try {
+      // 1. Delete associated reactions first (gracefully ignore if none)
+      await this.dbQuery(`reactions?meal_id=eq.${mealId}`, {
+        method: 'DELETE',
+        prefer: 'return=minimal'
+      }).catch(e => console.warn("Reactions cleanup note:", e));
+
+      // 2. Delete the meal record
+      await this.dbQuery(`meals?id=eq.${mealId}`, {
+        method: 'DELETE',
+        prefer: 'return=representation'
+      });
+
+      // 3. Clean up local fallback cache
+      const localMeals = this.getLocal('ourmam_meals', []);
+      const updatedMeals = localMeals.filter(m => m.id !== mealId);
+      this.setLocal('ourmam_meals', updatedMeals);
+
+      return true;
+    } catch (err) {
+      console.warn("deleteMeal server error, updating local cache:", err);
+      const localMeals = this.getLocal('ourmam_meals', []);
+      const updatedMeals = localMeals.filter(m => m.id !== mealId);
+      this.setLocal('ourmam_meals', updatedMeals);
+      return true;
+    }
+  }
+
   async addReaction(mealId, userId, userName, emoji, label) {
     try {
       const data = await this.dbQuery('reactions', {
@@ -693,12 +729,15 @@ class ApiService {
   }
 
   // ==================== REALTIME SUBSCRIPTIONS ====================
-  subscribeToMeals(callback) {
+  subscribeToMeals(callback, onDeleteCallback) {
     if (!this.client) return;
     return this.client
       .channel('public:meals')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meals' }, payload => {
-        callback(payload.new);
+        if (callback && payload.new) callback(payload.new);
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'meals' }, payload => {
+        if (onDeleteCallback && payload.old) onDeleteCallback(payload.old);
       })
       .subscribe();
   }

@@ -12,7 +12,7 @@ import { soundHelper } from '../utils/soundHelper.js';
 import { getUserAvatar } from '../utils/avatarHelper.js';
 
 export class LocketFeedComponent {
-  constructor(onSelectMeal, onSendReaction, onQuickReply, onFocusCamera, onOpenConnect) {
+  constructor(onSelectMeal, onSendReaction, onQuickReply, onFocusCamera, onOpenConnect, onDeleteMealRequest) {
     this.cardsContainer = document.getElementById('locket-feed-cards');
     this.emptyStateEl = document.getElementById('locket-feed-empty');
     this.emptyTitleEl = document.getElementById('locket-empty-title');
@@ -28,6 +28,7 @@ export class LocketFeedComponent {
     this.onQuickReply = onQuickReply;
     this.onFocusCamera = onFocusCamera;
     this.onOpenConnect = onOpenConnect;
+    this.onDeleteMealRequest = onDeleteMealRequest;
 
     this.meals = [];
     this.partner = null;
@@ -220,9 +221,17 @@ export class LocketFeedComponent {
           </div>
         </div>
 
-        <!-- Calories Pill: Real or -- kcal -->
-        <div class="px-2.5 py-0.5 rounded-full bg-surface-container-low text-tertiary text-[11px] font-medium border border-outline-variant/30 flex items-center gap-1">
-          <span>${kcalDisplay}</span>
+        <div class="flex items-center gap-1.5">
+          <!-- Calories Pill: Real or -- kcal -->
+          <div class="px-2.5 py-0.5 rounded-full bg-surface-container-low text-tertiary text-[11px] font-medium border border-outline-variant/30 flex items-center gap-1">
+            <span>${kcalDisplay}</span>
+          </div>
+
+          <!-- Prominent Delete Button -->
+          <button type="button" class="btn-card-delete-meal inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 text-[11px] font-bold active:scale-95 transition-all cursor-pointer shadow-2xs" title="Xoá bài viết này">
+            <span class="material-symbols-outlined text-[13px]">delete</span>
+            <span>Xoá</span>
+          </button>
         </div>
       </div>
 
@@ -230,6 +239,12 @@ export class LocketFeedComponent {
       <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center cursor-pointer group shadow-inner">
         <img class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" src="${meal.photo_url}" alt="${cleanCaption}" loading="lazy">
         
+        <!-- Quick Delete Overlay Button on Photo -->
+        <button type="button" class="btn-card-photo-delete absolute top-2.5 right-2.5 z-10 px-2.5 py-1 rounded-full bg-black/60 hover:bg-rose-600 text-white text-[10px] font-bold backdrop-blur-md flex items-center gap-1 active:scale-90 transition-all shadow-md cursor-pointer" title="Xoá ảnh này">
+          <span class="material-symbols-outlined text-xs">delete</span>
+          <span>Xoá ảnh</span>
+        </button>
+
         <!-- Clean Bottom Caption Overlay -->
         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8 flex items-end">
           <p class="text-white text-xs font-medium drop-shadow-sm line-clamp-2">
@@ -254,6 +269,19 @@ export class LocketFeedComponent {
         </form>
       </div>
     `;
+
+    // Bind Delete Buttons Click -> Open delete confirmation modal
+    const deleteBtns = card.querySelectorAll('.btn-card-delete-meal, .btn-card-photo-delete');
+    deleteBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onDeleteMealRequest) {
+          this.onDeleteMealRequest(meal);
+        } else if (this.onSelectMeal) {
+          this.onSelectMeal(meal);
+        }
+      });
+    });
 
     // Bind Photo Click -> Open Full View
     const photoEl = card.querySelector('img.group-hover\\:scale-\\[1\\.02\\]') || card.querySelector('img');

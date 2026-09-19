@@ -4,20 +4,20 @@
  * ==============================================================================
  */
 
-import { api } from './services/api.js?v=2026091975';
-import { mealService } from './services/mealService.js?v=2026091975';
-import { profileService } from './services/profileService.js?v=2026091975';
-import { chatService } from './services/chatService.js?v=2026091975';
-import { HeaderComponent } from './components/header.js?v=2026091975';
-import { LocketFeedComponent } from './components/locketFeed.js?v=2026091975';
-import { CameraViewComponent } from './components/cameraView.js?v=2026091975';
-import { CalendarViewComponent } from './components/calendarView.js?v=2026091975';
-import { ChatViewComponent } from './components/chatView.js?v=2026091975';
-import { NavigationComponent } from './components/navigation.js?v=2026091975';
-import { ModalsComponent } from './components/modals.js?v=2026091975';
-import { AuthViewComponent } from './components/authView.js?v=2026091975';
-import { soundHelper } from './utils/soundHelper.js?v=2026091975';
-import { getUserAvatar } from './utils/avatarHelper.js?v=2026091975';
+import { api } from './services/api.js?v=2026091999';
+import { mealService } from './services/mealService.js?v=2026091999';
+import { profileService } from './services/profileService.js?v=2026091999';
+import { chatService } from './services/chatService.js?v=2026091999';
+import { HeaderComponent } from './components/header.js?v=2026091999';
+import { LocketFeedComponent } from './components/locketFeed.js?v=2026091999';
+import { CameraViewComponent } from './components/cameraView.js?v=2026091999';
+import { CalendarViewComponent } from './components/calendarView.js?v=2026091999';
+import { ChatViewComponent } from './components/chatView.js?v=2026091999';
+import { NavigationComponent } from './components/navigation.js?v=2026091999';
+import { ModalsComponent } from './components/modals.js?v=2026091999';
+import { AuthViewComponent } from './components/authView.js?v=2026091999';
+import { soundHelper } from './utils/soundHelper.js?v=2026091999';
+import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
 import { compressImageFile, dataUrlToBlob } from './utils/imageCompressor.js?v=2026091660';
 import { getCurrentLocationName } from './utils/locationHelper.js?v=2026091660';
 
@@ -171,7 +171,8 @@ class App {
       () => this.handleLogout(true),
       (newName) => this.handleUpdateProfile(newName),
       (file) => this.handleUpdateAvatar(file),
-      (newPassword) => this.handleUpdatePassword(newPassword)
+      (newPassword) => this.handleUpdatePassword(newPassword),
+      (mealId) => this.handleDeleteMeal(mealId)
     );
 
     // 2. Header
@@ -183,7 +184,8 @@ class App {
       (meal, emoji, label) => this.handleReaction(meal, emoji, label),
       (meal, text) => this.handleQuickReply(meal, text),
       () => this.handleFocusCamera(),
-      () => this.openProfileModal()
+      () => this.openProfileModal(),
+      (meal) => this.modals.openDeleteConfirm(meal)
     );
 
     // 4. Camera View
@@ -193,7 +195,8 @@ class App {
 
     // 5. Calendar View
     this.calendarView = new CalendarViewComponent(
-      (meal) => this.modals.openPhotoModal(meal)
+      (meal) => this.modals.openPhotoModal(meal),
+      (meal) => this.modals.openDeleteConfirm(meal)
     );
 
     // 6. Chat View
@@ -390,8 +393,9 @@ class App {
   }
 
   async handleUpdateStatus(statusText) {
-    if (this.session?.user?.id) {
-      await profileService.updateStatus(this.session.user.id, statusText);
+    const targetUid = this.currentUser?.id || this.session?.user?.id;
+    if (targetUid) {
+      await profileService.updateStatus(targetUid, statusText);
     }
     this.currentUser.status_text = statusText;
     this.render();
@@ -401,8 +405,9 @@ class App {
     if (!this.currentUser) return;
     this.currentUser.display_name = newName;
 
-    if (this.session?.user?.id) {
-      await profileService.updateDisplayName(this.session.user.id, newName);
+    const targetUid = this.currentUser?.id || this.session?.user?.id;
+    if (targetUid) {
+      await profileService.updateDisplayName(targetUid, newName);
     } else {
       profileService.setCurrentUser(this.currentUser);
     }
@@ -427,8 +432,9 @@ class App {
       const finalAvatar = uploadedUrl || dataUrl;
       this.currentUser.avatar_url = finalAvatar;
 
-      if (this.session?.user?.id) {
-        await profileService.updateAvatar(this.session.user.id, finalAvatar);
+      const targetUid = this.currentUser?.id || this.session?.user?.id;
+      if (targetUid) {
+        await profileService.updateAvatar(targetUid, finalAvatar);
       } else {
         profileService.setCurrentUser(this.currentUser);
       }
@@ -612,6 +618,26 @@ class App {
     }
   }
 
+  async handleDeleteMeal(mealId) {
+    if (!mealId) return;
+    try {
+      soundHelper.playPop();
+      const success = await mealService.deleteMeal(mealId);
+      if (success) {
+        this.meals = this.meals.filter(m => m.id !== mealId);
+        this.renderPartnerFeed();
+        this.calendarView.setMeals(this.meals);
+        this.render();
+        this.showToast('Đã xoá khoảnh khắc bữa ăn 🗑️');
+      } else {
+        this.showToast('Không thể xoá ảnh. Vui lòng thử lại!');
+      }
+    } catch (err) {
+      console.error("handleDeleteMeal error:", err);
+      this.showToast('Đã có lỗi xảy ra khi xoá ảnh');
+    }
+  }
+
   getDefaultCaption(tag) {
     switch (tag) {
       case 'breakfast': return "Bữa sáng ấm áp cùng nhau ☀️";
@@ -640,14 +666,22 @@ class App {
   }
 
   initRealtime() {
-    api.subscribeToMeals((newMeal) => {
-      if (!this.meals.some(m => m.id === newMeal.id)) {
-        this.meals.unshift(newMeal);
-        this.render();
-        soundHelper.playPop();
-        this.showToast("🎉 Món mới từ " + newMeal.user_name);
+    api.subscribeToMeals(
+      (newMeal) => {
+        if (!this.meals.some(m => m.id === newMeal.id)) {
+          this.meals.unshift(newMeal);
+          this.render();
+          soundHelper.playPop();
+          this.showToast("🎉 Món mới từ " + (newMeal.user_name || "bạn bè"));
+        }
+      },
+      (deletedMeal) => {
+        if (deletedMeal && deletedMeal.id) {
+          this.meals = this.meals.filter(m => m.id !== deletedMeal.id);
+          this.render();
+        }
       }
-    });
+    );
 
     // ⚡ High-speed WebSocket Realtime Subscription
     api.subscribeToMessages((newMsg) => {

@@ -9,7 +9,7 @@ import { getUserAvatar } from '../utils/avatarHelper.js';
 import { soundHelper } from '../utils/soundHelper.js';
 
 export class CalendarViewComponent {
-  constructor(onSelectMeal) {
+  constructor(onSelectMeal, onDeleteMealRequest) {
     this.gridEl = document.getElementById('calendar-grid');
     this.monthLabelEl = document.getElementById('current-month-label');
     this.momentsCountEl = document.getElementById('month-moments-count');
@@ -23,6 +23,7 @@ export class CalendarViewComponent {
     this.selectedDate = new Date(); // Day currently selected by user
     this.meals = [];
     this.onSelectMeal = onSelectMeal;
+    this.onDeleteMealRequest = onDeleteMealRequest;
 
     this.bindEvents();
   }
@@ -231,7 +232,7 @@ export class CalendarViewComponent {
 
     meals.forEach(m => {
       const card = document.createElement('div');
-      card.className = 'w-44 shrink-0 bg-surface-container-lowest rounded-2xl p-2.5 border border-outline-variant/30 soft-tactile-shadow flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform hover:border-orange-200';
+      card.className = 'relative w-44 shrink-0 bg-surface-container-lowest rounded-2xl p-2.5 border border-outline-variant/30 soft-tactile-shadow flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform hover:border-orange-200';
       const timeStr = new Date(m.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       const avatarUrl = getUserAvatar(m.user_avatar, m.user_name || 'Người dùng');
 
@@ -239,6 +240,11 @@ export class CalendarViewComponent {
         <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-xs">
           <img class="w-full h-full object-cover" src="${m.photo_url}" alt="${m.dish_name}">
           <span class="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full font-medium">${timeStr}</span>
+          
+          <!-- Delete button on calendar item -->
+          <button type="button" class="btn-cal-item-delete absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-xs transition-all active:scale-90 cursor-pointer shadow-xs" title="Xoá ảnh này">
+            <span class="material-symbols-outlined text-xs">delete</span>
+          </button>
         </div>
         <div class="flex items-center justify-between gap-1">
           <span class="text-xs font-bold text-on-surface truncate">${m.dish_name || 'Món ngon'}</span>
@@ -249,6 +255,18 @@ export class CalendarViewComponent {
           <span class="text-primary font-bold shrink-0">🍜❤️</span>
         </div>
       `;
+
+      const delBtn = card.querySelector('.btn-cal-item-delete');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.onDeleteMealRequest) {
+            this.onDeleteMealRequest(m);
+          } else if (this.onSelectMeal) {
+            this.onSelectMeal(m);
+          }
+        });
+      }
 
       card.addEventListener('click', () => this.onSelectMeal(m));
       this.mealsContainer.appendChild(card);

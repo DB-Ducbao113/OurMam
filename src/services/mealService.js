@@ -47,6 +47,10 @@ class MealService {
   async addReaction(mealId, userId, userName, emoji, label) {
     return await api.addReaction(mealId, userId, userName, emoji, label);
   }
+
+  async deleteMeal(mealId) {
+    return await api.deleteMeal(mealId);
+  }
 }
 
 export const mealService = new MealService();

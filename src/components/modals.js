@@ -9,7 +9,7 @@ import { soundHelper } from '../utils/soundHelper.js';
 import { getUserAvatar } from '../utils/avatarHelper.js';
 
 export class ModalsComponent {
-  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword) {
+  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal) {
     // Profile & Settings Modal
     this.profileModal = document.getElementById('profile-modal');
     this.btnCloseProfileModal = document.getElementById('btn-close-profile-modal');
@@ -31,7 +31,9 @@ export class ModalsComponent {
     this.onUpdateProfile = onUpdateProfile;
     this.onUpdateAvatar = onUpdateAvatar;
     this.onUpdatePassword = onUpdatePassword;
+    this.onDeleteMeal = onDeleteMeal;
 
+    this.currentPhotoMeal = null;
     this.selectedRelType = 'couple'; // default couple
     this.isEditingProfile = false;
     this.isChangePwdOpen = false;
@@ -79,6 +81,54 @@ export class ModalsComponent {
     if (this.photoModal) {
       this.photoModal.addEventListener('click', (e) => {
         if (e.target === this.photoModal) this.closePhotoModal();
+      });
+    }
+
+    // Photo Delete & Confirmation Bindings
+    const modalDeleteConfirm = document.getElementById('delete-confirm-modal');
+    const btnCancelDelete = document.getElementById('btn-cancel-delete-modal');
+    const btnConfirmDelete = document.getElementById('btn-confirm-delete-modal');
+    const btnDeletePhotoTop = document.getElementById('btn-delete-photo-modal');
+    const btnDeletePhotoAction = document.getElementById('btn-delete-photo-action');
+
+    const promptDeleteMeal = () => {
+      if (!this.currentPhotoMeal) return;
+      soundHelper.playPop();
+      if (modalDeleteConfirm) {
+        modalDeleteConfirm.classList.remove('hidden');
+        modalDeleteConfirm.classList.add('flex');
+      }
+    };
+
+    if (btnDeletePhotoTop) btnDeletePhotoTop.addEventListener('click', promptDeleteMeal);
+    if (btnDeletePhotoAction) btnDeletePhotoAction.addEventListener('click', promptDeleteMeal);
+
+    if (btnCancelDelete && modalDeleteConfirm) {
+      btnCancelDelete.addEventListener('click', () => {
+        soundHelper.playPop();
+        modalDeleteConfirm.classList.add('hidden');
+        modalDeleteConfirm.classList.remove('flex');
+      });
+    }
+
+    if (modalDeleteConfirm) {
+      modalDeleteConfirm.addEventListener('click', (e) => {
+        if (e.target === modalDeleteConfirm) {
+          modalDeleteConfirm.classList.add('hidden');
+          modalDeleteConfirm.classList.remove('flex');
+        }
+      });
+    }
+
+    if (btnConfirmDelete && modalDeleteConfirm) {
+      btnConfirmDelete.addEventListener('click', async () => {
+        if (this.currentPhotoMeal && this.onDeleteMeal) {
+          const mealToDelete = this.currentPhotoMeal;
+          modalDeleteConfirm.classList.add('hidden');
+          modalDeleteConfirm.classList.remove('flex');
+          this.closePhotoModal();
+          await this.onDeleteMeal(mealToDelete.id);
+        }
       });
     }
 
@@ -1094,7 +1144,8 @@ export class ModalsComponent {
   }
 
   openPhotoModal(meal) {
-    if (!this.photoModal) return;
+    if (!this.photoModal || !meal) return;
+    this.currentPhotoMeal = meal;
     this.detailImg.src = meal.photo_url;
     this.detailAvatar.src = getUserAvatar(meal.user_avatar, meal.user_name || "Người dùng");
     this.detailAuthor.textContent = meal.user_name || "Người thương";
@@ -1109,6 +1160,25 @@ export class ModalsComponent {
   closePhotoModal() {
     this.photoModal.classList.add('hidden');
     this.photoModal.classList.remove('flex');
+    this.currentPhotoMeal = null;
+  }
+
+  openDeleteConfirm(meal) {
+    if (!meal) return;
+    this.currentPhotoMeal = meal;
+    const modalDeleteConfirm = document.getElementById('delete-confirm-modal');
+    if (modalDeleteConfirm) {
+      modalDeleteConfirm.classList.remove('hidden');
+      modalDeleteConfirm.classList.add('flex');
+    }
+  }
+
+  closeDeleteConfirm() {
+    const modalDeleteConfirm = document.getElementById('delete-confirm-modal');
+    if (modalDeleteConfirm) {
+      modalDeleteConfirm.classList.add('hidden');
+      modalDeleteConfirm.classList.remove('flex');
+    }
   }
 
   getTagLabel(tag) {

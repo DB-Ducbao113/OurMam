@@ -8,6 +8,20 @@
   <meta http-equiv="Expires" content="0">
   <title>OurMam - Food Locket</title>
   
+  <script>
+    // Immediately unregister all service workers and purge caches to prevent stale bundles
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) { caches.delete(k); });
+      });
+    }
+  </script>
+  
   <!-- PWA & iOS Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -160,7 +174,7 @@
 
       <!-- Trailing Action Cluster -->
       <div class="flex items-center space-x-1.5">
-        <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high" title="Chia sẻ Widget">
+        <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high cursor-pointer" title="Chia sẻ Widget">
           <span class="material-symbols-outlined text-lg">ios_share</span>
         </button>
       </div>
@@ -681,7 +695,13 @@
        ============================================================== -->
   <div id="photo-detail-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center p-4">
     <div class="relative w-full max-w-[480px] bg-surface-container-lowest rounded-3xl overflow-hidden soft-tactile-shadow flex flex-col">
-      <button id="btn-close-photo-modal" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-sm active:scale-90">
+      <!-- Delete Button (Top Left) -->
+      <button id="btn-delete-photo-modal" class="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/50 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-sm active:scale-90 transition-all cursor-pointer shadow-md" title="Xoá khoảnh khắc này">
+        <span class="material-symbols-outlined text-base">delete</span>
+      </button>
+
+      <!-- Close Button (Top Right) -->
+      <button id="btn-close-photo-modal" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-sm active:scale-90 cursor-pointer">
         <span class="material-symbols-outlined text-base">close</span>
       </button>
 
@@ -703,6 +723,39 @@
         <p id="detail-modal-caption" class="text-xs text-on-surface font-medium leading-relaxed">
           “Khoảnh khắc bữa ăn 🍲”
         </p>
+
+        <!-- Actions row in photo detail -->
+        <div class="pt-2 border-t border-outline-variant/30 flex items-center justify-between">
+          <button id="btn-delete-photo-action" type="button" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95">
+            <span class="material-symbols-outlined text-sm">delete</span>
+            <span>Xoá ảnh này</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       MODAL: XÁC NHẬN XOÁ KHOẢNH KHẮC BỮA ĂN
+       ============================================================== -->
+  <div id="delete-confirm-modal" class="fixed inset-0 z-70 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-rose-100 flex flex-col gap-4 text-center animate-scale-up">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
+        <span class="material-symbols-outlined text-2xl">delete_forever</span>
+      </div>
+      <div>
+        <h3 class="text-sm font-extrabold text-stone-900">Xoá khoảnh khắc này?</h3>
+        <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+          Ảnh bữa ăn này sẽ bị xoá vĩnh viễn khỏi dòng thời gian và Widget của cả hai.
+        </p>
+      </div>
+      <div class="flex items-center justify-center gap-2.5 pt-1">
+        <button id="btn-cancel-delete-modal" type="button" class="flex-1 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold active:scale-95 cursor-pointer transition-all">
+          Hủy bỏ
+        </button>
+        <button id="btn-confirm-delete-modal" type="button" class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold active:scale-95 shadow-xs cursor-pointer transition-all">
+          Xác nhận xoá
+        </button>
       </div>
     </div>
   </div>
@@ -834,6 +887,6 @@
   </div>
 
   <!-- Modular Frontend Entry Point (with cache-buster) -->
-  <script type="module" src="src/main.js?v=2026091984"></script>
+  <script type="module" src="src/main.js?v=2026091999"></script>
 </body>
 </html>
