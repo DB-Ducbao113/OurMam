@@ -29,15 +29,45 @@ export class CameraViewComponent {
     this.capturedDataUrl = null;
     this.onPublishMeal = onPublishMeal;
 
+    // Camera Permission UI Elements
+    this.promptPermissionEl = document.getElementById('camera-permission-prompt');
+    this.btnRequestPerm = document.getElementById('btn-request-camera-perm');
+    this.btnOpenGuide = document.getElementById('btn-open-camera-guide');
+    this.modalPermGuide = document.getElementById('camera-permission-modal');
+    this.btnClosePermModal = document.getElementById('btn-close-camera-perm-modal');
+    this.btnConfirmPerm = document.getElementById('btn-confirm-camera-perm');
+
     this.bindEvents();
     this.initCamera();
   }
 
   async initCamera() {
+    const preferredSource = localStorage.getItem('ourmam_setting_camera_source') || 'camera';
+    if (preferredSource === 'gallery') {
+      if (this.videoEl) this.videoEl.classList.add('hidden');
+      if (this.promptPermissionEl) {
+        this.promptPermissionEl.classList.add('hidden');
+        this.promptPermissionEl.classList.remove('flex');
+      }
+      if (this.hintEl) this.hintEl.textContent = "Chế độ thư viện: Bấm nút chụp để tải ảnh 🖼️";
+      return;
+    }
+
     try {
       await this.cameraHelper.start();
+      if (this.videoEl) this.videoEl.classList.remove('hidden');
+      if (this.promptPermissionEl) {
+        this.promptPermissionEl.classList.add('hidden');
+        this.promptPermissionEl.classList.remove('flex');
+      }
+      if (this.hintEl) this.hintEl.textContent = "Chạm để lấy nét món ăn 🍲";
     } catch (e) {
-      this.hintEl.textContent = "Nhấn 'Chọn từ thư viện' để gửi ảnh 📸";
+      console.warn("Camera access not granted or unavailable:", e);
+      if (this.promptPermissionEl) {
+        this.promptPermissionEl.classList.remove('hidden');
+        this.promptPermissionEl.classList.add('flex');
+      }
+      if (this.hintEl) this.hintEl.textContent = "Nhấn 'Chọn từ thư viện' hoặc Cấp quyền Camera 📸";
     }
   }
 
@@ -58,6 +88,46 @@ export class CameraViewComponent {
     this.btnFlip.addEventListener('click', () => this.cameraHelper.flip().catch(() => {}));
     this.btnFlash.addEventListener('click', () => this.cameraHelper.triggerFlash());
     this.btnRetake.addEventListener('click', () => this.resetView());
+
+    // Permission Prompt Events
+    if (this.btnRequestPerm) {
+      this.btnRequestPerm.addEventListener('click', async () => {
+        soundHelper.playPop();
+        await this.initCamera();
+      });
+    }
+
+    if (this.btnOpenGuide && this.modalPermGuide) {
+      this.btnOpenGuide.addEventListener('click', () => {
+        soundHelper.playPop();
+        this.modalPermGuide.classList.remove('hidden');
+        this.modalPermGuide.classList.add('flex');
+      });
+    }
+
+    if (this.btnClosePermModal && this.modalPermGuide) {
+      this.btnClosePermModal.addEventListener('click', () => {
+        this.modalPermGuide.classList.add('hidden');
+        this.modalPermGuide.classList.remove('flex');
+      });
+    }
+
+    if (this.btnConfirmPerm && this.modalPermGuide) {
+      this.btnConfirmPerm.addEventListener('click', async () => {
+        this.modalPermGuide.classList.add('hidden');
+        this.modalPermGuide.classList.remove('flex');
+        await this.initCamera();
+      });
+    }
+
+    if (this.modalPermGuide) {
+      this.modalPermGuide.addEventListener('click', (e) => {
+        if (e.target === this.modalPermGuide) {
+          this.modalPermGuide.classList.add('hidden');
+          this.modalPermGuide.classList.remove('flex');
+        }
+      });
+    }
 
     this.fileGallery.addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -82,15 +152,18 @@ export class CameraViewComponent {
       return;
     }
 
+    const preferredSource = localStorage.getItem('ourmam_setting_camera_source') || 'camera';
+    if (preferredSource === 'gallery' || !this.videoEl.srcObject || this.videoEl.classList.contains('hidden')) {
+      soundHelper.playPop();
+      this.fileGallery.click();
+      return;
+    }
+
     this.cameraHelper.triggerFlash();
     soundHelper.playShutter();
 
-    if (this.videoEl.srcObject && !this.videoEl.classList.contains('hidden')) {
-      const dataUrl = captureVideoFrame(this.videoEl);
-      this.setPreview(dataUrl);
-    } else {
-      this.fileGallery.click();
-    }
+    const dataUrl = captureVideoFrame(this.videoEl);
+    this.setPreview(dataUrl);
   }
 
   setPreview(dataUrl) {

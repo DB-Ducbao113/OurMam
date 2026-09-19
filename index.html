@@ -312,6 +312,27 @@
             </button>
           </div>
 
+          <!-- Camera Permission Denied / Prompt Overlay -->
+          <div id="camera-permission-prompt" class="hidden absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex-col items-center justify-center p-4 text-center z-20 rounded-3xl animate-fade-in">
+            <div class="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-400/40 text-orange-400 flex items-center justify-center mb-2 shadow-xs">
+              <span class="material-symbols-outlined text-2xl">videocam_off</span>
+            </div>
+            <h4 class="text-white text-xs font-bold mb-1">Chưa Cấp Quyền Camera</h4>
+            <p class="text-stone-300 text-[11px] max-w-[210px] mb-3 leading-relaxed">
+              Bật quyền Camera để chụp và gửi ảnh bữa ăn tức thì cho người ấy nhé!
+            </p>
+            <div class="flex flex-col gap-1.5 w-full max-w-[200px]">
+              <button id="btn-request-camera-perm" type="button" class="w-full py-2 bg-[#FF6433] hover:bg-orange-600 text-white text-xs font-bold rounded-xl active:scale-95 shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-sm">photo_camera</span>
+                <span>Cho phép Camera</span>
+              </button>
+              <button id="btn-open-camera-guide" type="button" class="w-full py-1.5 bg-white/15 hover:bg-white/25 text-white/95 text-[11px] font-medium rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-xs">settings</span>
+                <span>Cách bật "Luôn cho phép"</span>
+              </button>
+            </div>
+          </div>
+
           <div id="camera-hint" class="absolute bottom-2.5 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/90 text-[11px] font-medium">
             Chạm để lấy nét món ăn 🍲
           </div>
@@ -582,6 +603,78 @@
     </div>
   </div>
 
+  <!-- Submodal: Camera Permission Guide (Cách bật "Luôn cho phép") -->
+  <div id="camera-permission-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-orange-200/80 flex flex-col gap-3.5 relative animate-scale-up">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-orange-100 text-[#FF6433] flex items-center justify-center shadow-xs">
+            <span class="material-symbols-outlined text-xl">camera</span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-stone-900">Quyền Truy Cập Camera</h3>
+            <p class="text-[11px] text-stone-500">Cách bật "Luôn cho phép" không bị hỏi lại</p>
+          </div>
+        </div>
+        <button id="btn-close-camera-perm-modal" type="button" class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center cursor-pointer active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <!-- Instruction Cards -->
+      <div class="space-y-2.5 text-xs">
+        <!-- 1. Safari iPhone / iPad -->
+        <div class="p-3 bg-orange-50/70 rounded-2xl border border-orange-200/70">
+          <div class="flex items-center gap-2 mb-1.5 font-bold text-stone-900">
+            <span class="text-base">🍎</span>
+            <span>Trên Safari (iPhone / iPad)</span>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-1 leading-relaxed">
+            <li>Nhìn lên thanh URL Safari, bấm vào biểu tượng <b>aA</b> ở góc trái.</li>
+            <li>Chọn <b>Cài đặt trang web (Website Settings)</b>.</li>
+            <li>Tại mục <b>Camera</b>, chọn <b>Cho phép (Allow)</b> thay vì <i>Hỏi</i>.</li>
+          </ol>
+        </div>
+
+        <!-- 2. Google Chrome / Cốc Cốc -->
+        <div class="p-3 bg-blue-50/70 rounded-2xl border border-blue-200/70">
+          <div class="flex items-center gap-2 mb-1.5 font-bold text-stone-900">
+            <span class="text-base">🌐</span>
+            <span>Trên Chrome / Cốc Cốc (Điện thoại & PC)</span>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-1 leading-relaxed">
+            <li>Bấm vào biểu tượng <b>Cài đặt / Ổ khóa 🔒</b> bên trái thanh địa chỉ URL.</li>
+            <li>Chọn <b>Quyền đối với trang web (Permissions)</b>.</li>
+            <li>Chuyển mục <b>Máy ảnh (Camera)</b> sang <b>Luôn cho phép (Always Allow)</b>.</li>
+          </ol>
+        </div>
+
+        <!-- 3. Safari trên Mac -->
+        <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200">
+          <div class="flex items-center gap-2 mb-1.5 font-bold text-stone-900">
+            <span class="text-base">💻</span>
+            <span>Trên Safari MacBook / iMac</span>
+          </div>
+          <p class="text-[11px] text-stone-600 leading-snug">
+            Vào menu <b>Safari</b> (trên cùng màn hình) ➜ <b>Cài đặt cho trang web này...</b> ➜ Mục <b>Camera</b> chọn <b>Cho phép</b>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Note about Security -->
+      <div class="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/60 text-[10px] text-amber-900 flex items-start gap-2">
+        <span class="material-symbols-outlined text-sm shrink-0 mt-0.5 text-amber-600">verified_user</span>
+        <span>Theo quy chuẩn bảo mật toàn cầu của trình duyệt, trang web không thể tự ý bật camera nếu chưa được bạn chọn "Cho phép" ở thanh địa chỉ.</span>
+      </div>
+
+      <button id="btn-confirm-camera-perm" type="button" class="w-full py-2.5 bg-[#FF6433] hover:bg-orange-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">check</span>
+        <span>Đã hiểu & Bật camera ngay</span>
+      </button>
+    </div>
+  </div>
+
 
   <!-- ==============================================================
        MODAL 2: PHOTO DETAIL / HIGH-RES EXPANDED VIEW
@@ -741,6 +834,6 @@
   </div>
 
   <!-- Modular Frontend Entry Point (with cache-buster) -->
-  <script type="module" src="src/main.js?v=2026091982"></script>
+  <script type="module" src="src/main.js?v=2026091984"></script>
 </body>
 </html>

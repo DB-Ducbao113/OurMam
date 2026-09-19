@@ -328,6 +328,7 @@ export class ModalsComponent {
     const mealReminderActive = localStorage.getItem('ourmam_setting_meal_reminder') !== 'false';
     const cameraGpsActive = localStorage.getItem('ourmam_setting_gps_camera') !== 'false';
     const autoSaveActive = localStorage.getItem('ourmam_setting_auto_save') === 'true';
+    const preferredCameraSource = localStorage.getItem('ourmam_setting_camera_source') || 'camera';
 
     this.profilesContainer.innerHTML = `
       <!-- 1. Hero Card: Ghép Đôi & Người Thương -->
@@ -566,21 +567,38 @@ export class ModalsComponent {
           </label>
 
           <!-- Toggle 2: Camera & GPS -->
-          <label class="py-2.5 flex items-center justify-between cursor-pointer group select-none">
-            <div class="pr-3 flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0 mt-0.5">
-                <span class="material-symbols-outlined text-base">add_a_photo</span>
+          <div class="py-2.5 flex flex-col gap-2">
+            <label class="flex items-center justify-between cursor-pointer group select-none">
+              <div class="pr-3 flex items-start gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined text-base">add_a_photo</span>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-stone-800 group-hover:text-[#FF6433] transition-colors">Quyền Camera & Lưu vị trí quán ăn</p>
+                  <p class="text-[10px] text-stone-500 mt-0.5">Chụp món ăn nhanh kèm định vị địa điểm hẹn hò để làm kỷ niệm</p>
+                </div>
               </div>
-              <div>
-                <p class="text-xs font-bold text-stone-800 group-hover:text-[#FF6433] transition-colors">Quyền Camera & Lưu vị trí quán ăn</p>
-                <p class="text-[10px] text-stone-500 mt-0.5">Chụp món ăn nhanh kèm định vị địa điểm hẹn hò để làm kỷ niệm</p>
+              <div class="toggle-switch-container">
+                <input type="checkbox" id="toggle-camera-gps" ${cameraGpsActive ? 'checked' : ''}>
+                <span class="toggle-switch-slider"></span>
               </div>
+            </label>
+
+            <!-- Camera Source & Permission Guide Options -->
+            <div class="ml-10.5 pl-0.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 bg-stone-50 rounded-xl border border-stone-200/60 text-xs">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-stone-600 font-semibold">Nguồn ảnh:</span>
+                <select id="select-camera-preferred-source" class="px-2 py-1 bg-white border border-stone-200 rounded-lg text-xs font-bold text-stone-800 focus:border-[#FF6433] focus:outline-none cursor-pointer">
+                  <option value="camera" ${preferredCameraSource === 'camera' ? 'selected' : ''}>📸 Camera trực tiếp</option>
+                  <option value="gallery" ${preferredCameraSource === 'gallery' ? 'selected' : ''}>🖼️ Chọn từ thư viện</option>
+                </select>
+              </div>
+              <button id="btn-settings-open-camera-guide" type="button" class="text-[11px] text-[#FF6433] hover:underline font-bold flex items-center gap-0.5 cursor-pointer self-end sm:self-auto">
+                <span class="material-symbols-outlined text-xs">help_outline</span>
+                <span>Cách bật "Luôn cho phép"</span>
+              </button>
             </div>
-            <div class="toggle-switch-container">
-              <input type="checkbox" id="toggle-camera-gps" ${cameraGpsActive ? 'checked' : ''}>
-              <span class="toggle-switch-slider"></span>
-            </div>
-          </label>
+          </div>
 
           <!-- Toggle 3: Auto Save to Album -->
           <label class="py-2.5 flex items-center justify-between cursor-pointer group select-none">
@@ -902,6 +920,26 @@ export class ModalsComponent {
       toggleGps.addEventListener('change', (e) => {
         localStorage.setItem('ourmam_setting_gps_camera', e.target.checked);
         soundHelper.playPop();
+      });
+    }
+
+    const selectCamSource = this.profilesContainer.querySelector('#select-camera-preferred-source');
+    if (selectCamSource) {
+      selectCamSource.addEventListener('change', (e) => {
+        soundHelper.playPop();
+        localStorage.setItem('ourmam_setting_camera_source', e.target.value);
+      });
+    }
+
+    const btnSettingsCamGuide = this.profilesContainer.querySelector('#btn-settings-open-camera-guide');
+    if (btnSettingsCamGuide) {
+      btnSettingsCamGuide.addEventListener('click', () => {
+        soundHelper.playPop();
+        const modal = document.getElementById('camera-permission-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
       });
     }
 
