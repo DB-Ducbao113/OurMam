@@ -39,12 +39,20 @@ export class ChatViewComponent {
 
     this.currentView = 'list'; // 'list' | 'room'
     this.activeFriendId = null;
+    this.userBackedToList = false;
     this.messages = [];
     this.connections = [];
     this.currentUser = null;
     this.currentUserId = null;
 
     this.initDOM();
+  }
+
+  /**
+   * Reset back flag when switching to chat tab from bottom nav
+   */
+  onTabOpened() {
+    this.userBackedToList = false;
   }
 
   initDOM() {
@@ -101,32 +109,18 @@ export class ChatViewComponent {
       <!-- ============================================================
            2. CONVERSATIONS LIST CONTAINER (HỘP THƯ BẠN BÈ)
            ============================================================ -->
-      <div id="chat-list-container" class="hidden w-full flex-col space-y-3 pb-4">
+      <div id="chat-list-container" class="hidden w-full flex-col space-y-2.5 pb-4">
         
-        <!-- Header & Add Friend Action -->
-        <div class="flex items-center justify-between bg-surface-container-lowest rounded-2xl p-3.5 border border-outline-variant/30 soft-tactile-shadow">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
-              <span class="material-symbols-outlined text-lg filled">forum</span>
-            </div>
-            <div class="text-left">
-              <h3 class="text-sm font-bold text-on-surface">Hộp Thư Trò Chuyện</h3>
-              <p id="chat-list-count" class="text-[11px] text-tertiary">0 cuộc trò chuyện</p>
-            </div>
+        <!-- Streamlined Header & Add Friend Action -->
+        <div class="flex items-center justify-between px-1 pt-1 pb-0.5">
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-extrabold text-on-surface tracking-tight">Hộp thư</h3>
+            <span id="chat-list-count" class="text-[11px] font-bold text-tertiary bg-surface-container-low px-2.5 py-0.5 rounded-full border border-outline-variant/20">0 bạn bè</span>
           </div>
 
-          <button id="btn-chat-list-add-friend" type="button" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-primary-fixed text-primary text-xs font-bold flex items-center gap-1 active:scale-95 transition-all border border-outline-variant/30">
-            <span class="material-symbols-outlined text-sm">person_add</span>
-            <span>Kết bạn</span>
+          <button id="btn-chat-list-add-friend" type="button" class="w-8 h-8 rounded-full bg-surface-container hover:bg-orange-100 text-primary flex items-center justify-center active:scale-90 transition-all border border-outline-variant/20 shadow-2xs cursor-pointer" title="Thêm bạn / Ghép đôi">
+            <span class="material-symbols-outlined text-lg">person_add</span>
           </button>
-        </div>
-
-        <!-- Cute Meal Reminder Banner -->
-        <div class="bg-gradient-to-r from-orange-50 via-surface-container-low to-amber-50 rounded-2xl p-3 border border-orange-200/60 flex items-center gap-2.5">
-          <span class="text-xl flex-shrink-0">🍱</span>
-          <p class="text-xs text-on-surface-variant leading-snug">
-            Chọn một người bạn bên dưới để vào <b>phòng nhắn tin</b> hoặc bấm <b>nhắc ăn cơm</b> nhé! 💕
-          </p>
         </div>
 
         <!-- Conversations Stream -->
@@ -168,11 +162,7 @@ export class ChatViewComponent {
 
           <!-- Quick Action Buttons -->
           <div class="flex items-center gap-1.5 shrink-0">
-            <!-- Edit Nickname Button -->
-            <button id="btn-chat-room-edit-nickname" type="button" class="px-2 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#FF6433] text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all border border-orange-200/80 cursor-pointer shadow-2xs" title="Đặt biệt danh cho người ấy">
-              <span class="material-symbols-outlined text-xs">edit_note</span>
-              <span class="hidden sm:inline">Biệt danh</span>
-            </button>
+            <!-- Removed Edit Nickname Button per user request -->
 
             <!-- Quick Reminder Button -->
             <button id="btn-chat-room-reminder" type="button" class="px-2.5 py-1.5 rounded-xl bg-orange-100 hover:bg-orange-200 text-primary text-[11px] font-bold flex items-center gap-1 active:scale-95 transition-all shadow-2xs cursor-pointer" title="Gửi nhắc ăn cơm">
@@ -261,6 +251,7 @@ export class ChatViewComponent {
     if (btnBack) {
       btnBack.addEventListener('click', () => {
         soundHelper.playPop();
+        this.userBackedToList = true;
         this.currentView = 'list';
         this.activeFriendId = null;
         this.render(this.messages, this.currentUserId, this.connections, this.currentUser);
@@ -298,6 +289,7 @@ export class ChatViewComponent {
    * Helper to open chat room directly with a specific user
    */
   openChatWith(friendId) {
+    this.userBackedToList = false;
     this.activeFriendId = friendId;
     this.currentView = 'room';
     this.render(this.messages, this.currentUserId, this.connections, this.currentUser);
@@ -361,32 +353,38 @@ export class ChatViewComponent {
       this.currentView = 'list';
     }
 
-    // Case 2: View is Conversations List (User has not tapped a conversation yet)
-    if (this.currentView === 'list' || !this.activeFriendId) {
+    // Auto-streamline removed per user request: always show friends list by default
+    // if (this.connections.length === 1 && !this.userBackedToList) {
+    //   this.activeFriendId = this.connections[0].friend?.id;
+    //   this.currentView = 'room';
+    // }
+
+    // Case 2: View is Chat Room (User is in a chat room with a friend)
+    if (this.currentView === 'room' && this.activeFriendId) {
       if (listContainer) {
-        listContainer.classList.remove('hidden');
-        listContainer.classList.add('flex');
+        listContainer.classList.add('hidden');
+        listContainer.classList.remove('flex');
       }
       if (roomContainer) {
-        roomContainer.classList.add('hidden');
-        roomContainer.classList.remove('flex');
+        roomContainer.classList.remove('hidden');
+        roomContainer.classList.add('flex');
       }
 
-      this.renderConversationsList();
+      this.renderChatRoom();
       return;
     }
 
-    // Case 3: View is Chat Room (User tapped on a specific contact to chat)
+    // Case 3: View is Conversations List (User has multiple friends or clicked Back)
     if (listContainer) {
-      listContainer.classList.add('hidden');
-      listContainer.classList.remove('flex');
+      listContainer.classList.remove('hidden');
+      listContainer.classList.add('flex');
     }
     if (roomContainer) {
-      roomContainer.classList.remove('hidden');
-      roomContainer.classList.add('flex');
+      roomContainer.classList.add('hidden');
+      roomContainer.classList.remove('flex');
     }
 
-    this.renderChatRoom();
+    this.renderConversationsList();
   }
 
   /**
@@ -398,7 +396,7 @@ export class ChatViewComponent {
     if (!convListEl) return;
 
     if (listCountEl) {
-      listCountEl.textContent = `${this.connections.length} người bạn đang kết nối`;
+      listCountEl.textContent = `${this.connections.length} bạn bè`;
     }
 
     convListEl.innerHTML = '';
@@ -462,6 +460,7 @@ export class ChatViewComponent {
 
       card.addEventListener('click', () => {
         soundHelper.playPop();
+        this.userBackedToList = false;
         this.activeFriendId = friend.id;
         this.currentView = 'room';
         this.render(this.messages, this.currentUserId, this.connections, this.currentUser);
@@ -487,6 +486,7 @@ export class ChatViewComponent {
     const realName = partner.display_name || (isCouple ? 'Người yêu' : 'Bạn bè');
     const nickname = partner.custom_nickname || partner.nickname || activeConn.nickname || null;
     const effectiveName = nickname || realName;
+    const partnerName = effectiveName;
     const partnerAvatar = getUserAvatar(partner.avatar_url, realName);
 
     // Update Room Header

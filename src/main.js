@@ -9,12 +9,12 @@ import { mealService } from './services/mealService.js?v=2026091999';
 import { profileService } from './services/profileService.js?v=2026091999';
 import { chatService } from './services/chatService.js?v=2026091999';
 import { HeaderComponent } from './components/header.js?v=2026091999';
-import { LocketFeedComponent } from './components/locketFeed.js?v=2026091999';
-import { CameraViewComponent } from './components/cameraView.js?v=2026091999';
+import { LocketFeedComponent } from './components/locketFeed.js?v=2026092107';
+import { CameraViewComponent } from './components/cameraView.js?v=2026092107';
 import { CalendarViewComponent } from './components/calendarView.js?v=2026091999';
-import { ChatViewComponent } from './components/chatView.js?v=2026091999';
+import { ChatViewComponent } from './components/chatView.js?v=2026092102';
 import { NavigationComponent } from './components/navigation.js?v=2026091999';
-import { ModalsComponent } from './components/modals.js?v=2026091999';
+import { ModalsComponent } from './components/modals.js?v=2026092103';
 import { AuthViewComponent } from './components/authView.js?v=2026091999';
 import { soundHelper } from './utils/soundHelper.js?v=2026091999';
 import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
@@ -185,7 +185,8 @@ class App {
       (meal, text) => this.handleQuickReply(meal, text),
       () => this.handleFocusCamera(),
       () => this.openProfileModal(),
-      (meal) => this.modals.openDeleteConfirm(meal)
+      (meal) => this.modals.openDeleteConfirm(meal),
+      () => this.navigation.switchTab('tab-calendar')
     );
 
     // 4. Camera View
@@ -210,6 +211,9 @@ class App {
     this.navigation = new NavigationComponent((tabId) => {
       if (tabId === 'tab-calendar') this.calendarView.setMeals(this.meals);
       if (tabId === 'tab-chat') {
+        if (this.chatView.onTabOpened) {
+          this.chatView.onTabOpened();
+        }
         this.chatView.render(this.messages, this.currentUser ? this.currentUser.id : null, this.connections, this.currentUser);
         // Instant background sync on opening chat tab
         chatService.getRecentMessages(25).then(recents => {
@@ -454,13 +458,17 @@ class App {
     return res;
   }
 
-  async handlePublishMeal({ photoUrl, tag, caption, blob }) {
+  async handlePublishMeal({ photoUrl, tag, caption, blob, calories, location }) {
     const defaultCaption = this.getDefaultCaption(tag);
     const finalCaption = caption ? `“${caption}”` : `“${defaultCaption}”`;
     const dishName = caption || "Món ngon hôm nay";
-    const userLocation = await getCurrentLocationName();
+    
+    // Use user inputted location if provided, otherwise fallback to auto-fetch
+    const userLocation = location || await getCurrentLocationName();
 
-    const newMeal = await mealService.createMeal({
+    const tempId = 'temp-' + Date.now();
+    const optimisticMeal = {
+      id: tempId,
       user_id: this.currentUser.id,
       user_name: this.currentUser.display_name || "Bạn 🌸",
       user_avatar: this.currentUser.avatar_url,
@@ -469,21 +477,53 @@ class App {
       caption: finalCaption,
       meal_type: tag,
       location: userLocation,
-      calories: null,
+      calories: calories || null,
       rating: null,
-      audience: "all"
-    }, blob);
+      audience: "all",
+      created_at: new Date().toISOString(),
+      reactions: [],
+      isUploading: true
+    };
 
-    this.meals.unshift(newMeal);
-    soundHelper.playPop();
-    this.showToast("Đã gửi món ngon lên Locket! 💕");
+    // Optimistic UI update
+    this.meals.unshift(optimisticMeal);
     this.render();
+    soundHelper.playPop();
 
-    // Automated chat notification
-    await this.handleChatMessage({
-      text: `Vừa gửi đĩa ăn mới: ${dishName} 🍱`,
-      photoUrl: newMeal.photo_url
-    });
+    try {
+      const newMeal = await mealService.createMeal({
+        user_id: optimisticMeal.user_id,
+        user_name: optimisticMeal.user_name,
+        user_avatar: optimisticMeal.user_avatar,
+        photo_url: photoUrl,
+        dish_name: optimisticMeal.dish_name,
+        caption: optimisticMeal.caption,
+        meal_type: optimisticMeal.meal_type,
+        location: optimisticMeal.location,
+        calories: optimisticMeal.calories,
+        rating: null,
+        audience: "all"
+      }, blob);
+
+      // Replace temp meal with real one
+      const idx = this.meals.findIndex(m => m.id === tempId);
+      if (idx !== -1) {
+        this.meals[idx] = newMeal;
+      }
+      this.render();
+      this.showToast("Đã gửi món ngon lên Locket! 💕");
+
+      // Automated chat notification
+      await this.handleChatMessage({
+        text: `Vừa gửi đĩa ăn mới: ${dishName} 🍱`,
+        photoUrl: newMeal.photo_url
+      });
+    } catch (err) {
+      console.error("Publish error:", err);
+      this.meals = this.meals.filter(m => m.id !== tempId);
+      this.render();
+      alert("Lỗi mạng khi tải ảnh lên, vui lòng thử lại!");
+    }
   }
 
   async handleChatMessage({ text, photoUrl, receiverId }) {

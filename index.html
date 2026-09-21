@@ -174,7 +174,7 @@
 
       <!-- Trailing Action Cluster -->
       <div class="flex items-center space-x-1.5">
-        <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high cursor-pointer" title="Chia sẻ Widget">
+        <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high cursor-pointer" title="Chia sẻ ứng dụng">
           <span class="material-symbols-outlined text-lg">ios_share</span>
         </button>
       </div>
@@ -352,11 +352,25 @@
           </div>
         </div>
 
-        <!-- Caption Input Box -->
-        <div class="flex flex-col space-y-1.5">
-          <div class="flex items-center space-x-2 bg-surface-container-low rounded-xl px-3.5 py-2 border border-outline-variant/30 focus-within:border-primary focus-within:bg-white transition-all">
-            <span class="material-symbols-outlined text-primary text-base">edit_note</span>
-            <input id="input-meal-caption" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-on-surface placeholder:text-tertiary/70 w-full" placeholder="Nhập tên món ăn hôm nay..." type="text">
+        <!-- Detail Form Inputs -->
+        <div class="flex flex-col space-y-2 bg-surface-container-low rounded-xl px-3.5 py-2.5 border border-outline-variant/30 transition-all shadow-sm">
+          <!-- Dish Name -->
+          <div class="flex items-center space-x-2 border-b border-outline-variant/30 pb-2">
+            <span class="material-symbols-outlined text-primary text-[15px]">restaurant</span>
+            <input id="input-meal-caption" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-[13px] font-medium text-on-surface placeholder:text-tertiary/70 w-full" placeholder="Nhập tên món ăn hôm nay..." type="text">
+          </div>
+          <!-- Calories -->
+          <div class="flex items-center space-x-2 border-b border-outline-variant/30 pb-2 pt-1">
+            <span class="material-symbols-outlined text-orange-500 text-[15px]">local_fire_department</span>
+            <input id="input-meal-calories" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-on-surface placeholder:text-tertiary/70 w-full" placeholder="Nhập số Calories (ví dụ: 500)" type="number" min="0">
+          </div>
+          <!-- Location -->
+          <div class="flex items-center space-x-2 pt-1 relative">
+            <span class="material-symbols-outlined text-emerald-500 text-[15px]">location_on</span>
+            <input id="input-meal-location" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-on-surface placeholder:text-tertiary/70 w-full pr-8" placeholder="Địa điểm (Bấm nút bên phải để tự động lấy)" type="text">
+            <button type="button" id="btn-get-location" class="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-tertiary hover:text-primary transition-colors" title="Lấy vị trí">
+              <span class="material-symbols-outlined text-[13px]">my_location</span>
+            </button>
           </div>
         </div>
 
@@ -390,8 +404,8 @@
         <!-- Feed Header & Person Filter (Everyone / Partner / Me) -->
         <div class="flex items-center justify-between px-1">
           <div class="flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-primary text-base">photo_library</span>
-            <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider">Khoảnh khắc Locket</h3>
+            <span class="material-symbols-outlined text-primary text-base">today</span>
+            <h3 id="locket-feed-title" class="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center">Khoảnh khắc hôm nay</h3>
           </div>
 
           <!-- Filter Pills -->
@@ -411,6 +425,25 @@
         <!-- Dynamic Photo Cards Container -->
         <div id="locket-feed-cards" class="w-full flex flex-col space-y-4">
           <!-- Rendered dynamically via LocketFeedComponent -->
+        </div>
+
+        <!-- Go to History Tab Link / Action Bar -->
+        <div id="locket-feed-history-footer" class="hidden w-full pt-1 pb-2">
+          <button id="btn-feed-view-all-history" type="button" class="w-full py-3 px-4 rounded-2xl bg-surface-container-lowest hover:bg-orange-50/70 border border-outline-variant/30 hover:border-primary/40 soft-tactile-shadow flex items-center justify-between text-left group active:scale-[0.99] transition-all cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-orange-100/80 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-base">history</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-on-surface group-hover:text-primary transition-colors">Xem toàn bộ lịch sử bữa ăn</h4>
+                <p id="feed-history-count-desc" class="text-[10px] text-tertiary">Đã lưu trữ các khoảnh khắc trong tab Lịch sử</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 text-tertiary group-hover:text-primary transition-colors">
+              <span class="text-xs font-bold">Mở lịch</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+          </button>
         </div>
 
         <!-- Empty Feed State -->
@@ -496,56 +529,126 @@
     </div>
   </div>
 
-  <!-- Submodal: Widget Installation Guide -->
-  <div id="widget-guide-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center">
-            <span class="material-symbols-outlined text-base">widgets</span>
+  <!-- Submodal: iOS Scriptable Widget Installation Guide -->
+  <div id="widget-guide-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-3 sm:p-4">
+    <div class="w-full max-w-md max-h-[90vh] bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up overflow-hidden">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-1 border-b border-stone-100 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#FF6433] to-[#FE8D52] text-white flex items-center justify-center shadow-xs">
+            <span class="material-symbols-outlined text-lg">widgets</span>
           </div>
-          <h3 class="text-sm font-bold text-stone-900">Cách Thêm Ra Màn Hình Chính</h3>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm font-bold text-stone-900">Cài Đặt Widget iOS (Scriptable)</h3>
+              <span class="px-1.5 py-0.2 rounded-md bg-orange-100 text-[#FF6433] text-[9px] font-black uppercase">Locket</span>
+            </div>
+            <p class="text-[10px] text-stone-500">Xem ảnh bữa ăn của người ấy ngay màn hình chính</p>
+          </div>
         </div>
-        <button id="btn-close-widget-guide" type="button" class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700">
+        <button id="btn-close-widget-guide" type="button" class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors cursor-pointer">
           <span class="material-symbols-outlined text-sm">close</span>
         </button>
       </div>
 
-      <div class="space-y-3 text-xs text-stone-600">
-        <!-- iOS Guide -->
-        <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
-          <div class="flex items-center gap-1.5 font-bold text-stone-900">
-            <span>🍏 Trên iPhone (Safari)</span>
+      <!-- Scrollable Guide Content -->
+      <div class="flex-1 overflow-y-auto space-y-3.5 pr-1 text-xs text-stone-700">
+        
+        <!-- 1. Copy Script Card (Nổi bật nhất) -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-orange-50/90 via-[#FFF8F5] to-amber-50/70 border-2 border-orange-200/80 shadow-2xs space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[#FF6433] text-base">code</span>
+              <span class="text-xs font-bold text-stone-900">Mã Script OurMam Widget</span>
+            </div>
+            <span class="text-[10px] font-mono font-bold text-stone-500 bg-white/80 px-2 py-0.5 rounded-full border border-orange-200/60">v1.0 • Supabase</span>
           </div>
-          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-0.5">
-            <li>Mở bằng <b>Safari</b> trên iPhone.</li>
-            <li>Bấm nút <b>Chia sẻ</b> (biểu tượng <span class="material-symbols-outlined text-xs inline">ios_share</span> ở dưới cùng).</li>
-            <li>Chọn <b>"Thêm vào MH chính"</b> (Add to Home Screen).</li>
-            <li>Bấm <b>"Thêm"</b> để dùng như ứng dụng gốc!</li>
-          </ol>
+
+          <!-- 1-Tap Copy Button -->
+          <button id="btn-copy-widget-script" type="button" class="w-full py-2.5 px-4 rounded-xl bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span class="material-symbols-outlined text-base">content_copy</span>
+            <span>Sao chép mã Script (190 dòng)</span>
+          </button>
+
+          <p class="text-[10px] text-stone-500 flex items-center gap-1 font-medium leading-tight">
+            <span class="text-emerald-600 font-bold">✓</span> Đã cấu hình sẵn API Supabase, tự động nạp ảnh mới & chạm mở app OurMam.
+          </p>
+
+          <!-- Collapsible / Scrollable Code Snippet Box -->
+          <div class="mt-1.5 bg-stone-900 rounded-xl p-2.5 font-mono text-[10px] text-stone-300 max-h-24 overflow-y-auto border border-stone-800 relative group cursor-pointer" title="Chạm để sao chép">
+            <div class="sticky top-0 right-0 flex justify-end mb-1">
+              <span class="text-[9px] font-mono text-orange-400 bg-stone-800/90 px-1.5 py-0.5 rounded">Chạm để sao chép toàn bộ</span>
+            </div>
+            <pre id="widget-code-preview" class="whitespace-pre overflow-x-auto select-all leading-relaxed"></pre>
+          </div>
         </div>
 
-        <!-- Android Guide -->
-        <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
-          <div class="flex items-center gap-1.5 font-bold text-stone-900">
-            <span>🤖 Trên Android (Chrome)</span>
+        <!-- 2. Step-by-Step Instructions -->
+        <div class="space-y-2.5">
+          <!-- Step 1: Install Scriptable -->
+          <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center text-[10px] font-black">1</span>
+                <span>Cài ứng dụng Scriptable</span>
+              </span>
+              <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-[10px] font-bold transition-all shadow-2xs">
+                <span>App Store</span>
+                <span class="material-symbols-outlined text-xs">open_in_new</span>
+              </a>
+            </div>
+            <p class="text-[11px] text-stone-600 leading-relaxed">
+              Scriptable là app miễn phí trên App Store cho phép tạo widget iOS linh hoạt, an toàn và trực tiếp.
+            </p>
           </div>
-          <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-0.5">
-            <li>Mở bằng <b>Google Chrome</b>.</li>
-            <li>Bấm menu <b>3 chấm ⋮</b> góc trên phải.</li>
-            <li>Chọn <b>"Cài đặt ứng dụng"</b> hoặc <b>"Thêm vào Màn hình chính"</b>.</li>
-          </ol>
+
+          <!-- Step 2: Paste Script in Scriptable -->
+          <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
+            <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center text-[10px] font-black">2</span>
+              <span>Tạo Script mới trong Scriptable</span>
+            </span>
+            <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-1">
+              <li>Mở app <b>Scriptable</b> ➔ Bấm dấu <b>+</b> (góc trên bên phải).</li>
+              <li>Xóa hết mã mẫu, <b>Dán (Paste)</b> toàn bộ mã đã sao chép ở trên vào.</li>
+              <li>Chạm vào dòng tiêu đề trên cùng, đặt tên là <b>OurMam</b> rồi bấm <b>Done</b>.</li>
+            </ol>
+          </div>
+
+          <!-- Step 3: Add Widget to Home Screen -->
+          <div class="p-3 bg-stone-50 rounded-2xl border border-stone-200/70 space-y-1.5">
+            <span class="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-orange-100 text-[#FF6433] flex items-center justify-center text-[10px] font-black">3</span>
+              <span>Đưa Widget ra màn hình chính</span>
+            </span>
+            <ol class="list-decimal list-inside space-y-1 text-[11px] text-stone-600 pl-1">
+              <li>Ra màn hình chính iPhone, chạm giữ vào vùng trống cho biểu tượng rung rinh.</li>
+              <li>Bấm dấu <b>+</b> (góc trên bên trái) ➔ Tìm và chọn <b>Scriptable</b>.</li>
+              <li>Chọn kích thước Widget (khuyên dùng <b>Nhỏ</b> hoặc <b>Vừa</b>) ➔ Bấm <b>Thêm tiện ích</b>.</li>
+              <li>Chạm giữ vào Widget vừa thêm ➔ Chọn <b>Sửa tiện ích</b> (Edit Widget) ➔ Tại dòng <b>Script</b>, chọn <b>OurMam</b>. Hoàn tất! 🎉</li>
+            </ol>
+          </div>
         </div>
+
       </div>
 
-      <button id="btn-confirm-widget-guide" type="button" class="w-full py-2.5 bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs rounded-xl shadow-md active:scale-98 transition-all">
-        Đã hiểu
-      </button>
+      <!-- Footer Action Buttons -->
+      <div class="flex items-center gap-2 pt-1 border-t border-stone-100 shrink-0">
+        <button id="btn-action-copy-and-close" type="button" class="flex-1 py-2.5 bg-[#FF6433] hover:bg-[#eb5828] text-white font-bold text-xs rounded-xl shadow-md active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">content_copy</span>
+          <span>Sao chép mã & Đã hiểu</span>
+        </button>
+        <button id="btn-confirm-widget-guide" type="button" class="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl active:scale-98 transition-all cursor-pointer">
+          Đóng
+        </button>
+      </div>
+
     </div>
   </div>
 
   <!-- Submodal: App Guide for New Users -->
-  <div id="settings-help-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
+  <div id="settings-help-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -571,8 +674,8 @@
         <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100 flex items-start gap-2.5">
           <span class="text-xl">💌</span>
           <div>
-            <h4 class="font-bold text-stone-900 text-xs">2. Gửi locket đến người thương</h4>
-            <p class="text-[11px] text-stone-500 mt-0.5">Ảnh sẽ xuất hiện ngay lập tức trên feed và widget của người ấy.</p>
+            <h4 class="font-bold text-stone-900 text-xs">2. Gửi ảnh đến người thương</h4>
+            <p class="text-[11px] text-stone-500 mt-0.5">Ảnh sẽ xuất hiện ngay lập tức trên feed của người ấy.</p>
           </div>
         </div>
 
@@ -580,7 +683,7 @@
           <span class="text-xl">🔥</span>
           <div>
             <h4 class="font-bold text-stone-900 text-xs">3. Tích streak ăn cùng nhau</h4>
-            <p class="text-[11px] text-stone-500 mt-0.5">Mỗi ngày chụp ít nhất 1 bữa để tích lũy chuỗi ngày yêu thương.</p>
+            <p class="text-[11px] text-stone-500 mt-0.5">Mỗi ngày chụp ít nhất 1 bữa để tích lũy chuỗi ngày gắn kết.</p>
           </div>
         </div>
       </div>
@@ -592,7 +695,7 @@
   </div>
 
   <!-- Submodal: Privacy Info -->
-  <div id="privacy-info-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
+  <div id="privacy-info-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden flex-col items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-100 flex flex-col space-y-3.5 animate-scale-up">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -618,7 +721,7 @@
   </div>
 
   <!-- Submodal: Camera Permission Guide (Cách bật "Luôn cho phép") -->
-  <div id="camera-permission-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+  <div id="camera-permission-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-orange-200/80 flex flex-col gap-3.5 relative animate-scale-up">
       <!-- Header -->
       <div class="flex items-center justify-between">
@@ -693,7 +796,7 @@
   <!-- ==============================================================
        MODAL 2: PHOTO DETAIL / HIGH-RES EXPANDED VIEW
        ============================================================== -->
-  <div id="photo-detail-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center p-4">
+  <div id="photo-detail-modal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center p-4">
     <div class="relative w-full max-w-[480px] bg-surface-container-lowest rounded-3xl overflow-hidden soft-tactile-shadow flex flex-col">
       <!-- Delete Button (Top Left) -->
       <button id="btn-delete-photo-modal" class="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/50 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-sm active:scale-90 transition-all cursor-pointer shadow-md" title="Xoá khoảnh khắc này">
@@ -738,7 +841,7 @@
   <!-- ==============================================================
        MODAL: XÁC NHẬN XOÁ KHOẢNH KHẮC BỮA ĂN
        ============================================================== -->
-  <div id="delete-confirm-modal" class="fixed inset-0 z-70 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+  <div id="delete-confirm-modal" class="fixed inset-0 z-[70] bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-rose-100 flex flex-col gap-4 text-center animate-scale-up">
       <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
         <span class="material-symbols-outlined text-2xl">delete_forever</span>
@@ -763,7 +866,7 @@
   <!-- ==============================================================
        MODAL 3: ĐẶT BIỆT DANH (SET CUSTOM NICKNAME FOR FRIEND / COUPLE)
        ============================================================== -->
-  <div id="nickname-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+  <div id="nickname-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-orange-200/80 flex flex-col gap-4 relative animate-scale-up">
       <!-- Header -->
       <div class="flex items-center justify-between">
@@ -833,7 +936,7 @@
   </div>
 
   <!-- Submodal: Edit Display Name Modal (Đổi tên hiển thị tài khoản) -->
-  <div id="edit-name-modal" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
+  <div id="edit-name-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 animate-fade-in">
     <div class="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-orange-200/80 flex flex-col gap-4 relative animate-scale-up">
       <!-- Header -->
       <div class="flex items-center justify-between">
@@ -887,6 +990,6 @@
   </div>
 
   <!-- Modular Frontend Entry Point (with cache-buster) -->
-  <script type="module" src="src/main.js?v=2026091999"></script>
+  <script type="module" src="src/main.js?v=2026092101"></script>
 </body>
 </html>

@@ -21,6 +21,9 @@ export class CameraViewComponent {
     this.btnRetake = document.getElementById('btn-retake');
     this.fileGallery = document.getElementById('file-input-gallery');
     this.inputCaption = document.getElementById('input-meal-caption');
+    this.inputCalories = document.getElementById('input-meal-calories');
+    this.inputLocation = document.getElementById('input-meal-location');
+    this.btnGetLocation = document.getElementById('btn-get-location');
     this.tagButtons = document.querySelectorAll('.meal-tag-btn');
     this.sectionTitle = document.getElementById('camera-section-title');
 
@@ -39,6 +42,42 @@ export class CameraViewComponent {
 
     this.bindEvents();
     this.initCamera();
+    
+    // Auto fetch location after 1 second if possible
+    if (this.btnGetLocation) {
+      this.btnGetLocation.addEventListener('click', () => this.fetchLocation());
+      setTimeout(() => this.fetchLocation(), 1000);
+    }
+  }
+
+  fetchLocation() {
+    if (!this.inputLocation) return;
+    this.inputLocation.placeholder = 'Đang tìm vị trí...';
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=14`);
+            const data = await res.json();
+            if (data && data.address) {
+              const loc = data.address.city || data.address.town || data.address.suburb || data.address.state || 'Gần bạn';
+              this.inputLocation.value = loc;
+              this.inputLocation.placeholder = 'Đã tự động lấy vị trí';
+            } else {
+              this.inputLocation.placeholder = 'Không tìm thấy tên đường, vui lòng tự nhập';
+            }
+          } catch (e) {
+            this.inputLocation.placeholder = 'Lỗi kết nối, vui lòng tự nhập';
+          }
+        },
+        (err) => {
+          this.inputLocation.placeholder = 'Vui lòng cho phép định vị hoặc tự nhập';
+        },
+        { timeout: 5000 }
+      );
+    } else {
+      this.inputLocation.placeholder = 'Trình duyệt không hỗ trợ định vị';
+    }
   }
 
   async initCamera() {
@@ -140,13 +179,25 @@ export class CameraViewComponent {
   handleShutter() {
     if (this.capturedDataUrl) {
       // Publish state
-      const caption = this.inputCaption.value.trim();
+      const caption = this.inputCaption ? this.inputCaption.value.trim() : '';
+      
+      let parsedCals = null;
+      if (this.inputCalories && this.inputCalories.value.trim()) {
+        parsedCals = parseInt(this.inputCalories.value.trim(), 10);
+        if (isNaN(parsedCals) || parsedCals < 0) parsedCals = Math.abs(parsedCals) || 0;
+      }
+      const calories = parsedCals !== null ? parsedCals + ' kcal' : null;
+      
+      const location = this.inputLocation && this.inputLocation.value.trim() ? this.inputLocation.value.trim() : null;
+
       const blob = dataUrlToBlob(this.capturedDataUrl);
       this.onPublishMeal({
         photoUrl: this.capturedDataUrl,
         blob: blob,
         tag: this.selectedTag,
-        caption: caption
+        caption: caption,
+        calories: calories,
+        location: location
       });
       this.resetView();
       return;
@@ -185,7 +236,9 @@ export class CameraViewComponent {
     this.reticleEl.classList.remove('hidden');
     this.shutterIcon.textContent = 'photo_camera';
     this.hintEl.textContent = 'Chạm vào đĩa thức ăn để lấy nét 🍲';
-    this.inputCaption.value = '';
+    if (this.inputCaption) this.inputCaption.value = '';
+    if (this.inputCalories) this.inputCalories.value = '';
+    if (this.inputLocation) this.inputLocation.value = '';
   }
 
   updatePartnerTitle(partnerName) {

@@ -7,6 +7,7 @@
 import { formatMealTime } from '../utils/dateHelper.js';
 import { soundHelper } from '../utils/soundHelper.js';
 import { getUserAvatar } from '../utils/avatarHelper.js';
+import { SCRIPTABLE_WIDGET_CODE } from '../utils/scriptableWidgetCode.js';
 
 export class ModalsComponent {
   constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal) {
@@ -74,6 +75,34 @@ export class ModalsComponent {
     bindClose('btn-confirm-settings-help', modalSettingsHelp);
     bindClose('btn-close-privacy-info', modalPrivacyInfo);
     bindClose('btn-confirm-privacy-info', modalPrivacyInfo);
+
+    // Scriptable Widget Copy Script Buttons
+    const btnCopyScript = document.getElementById('btn-copy-widget-script');
+    if (btnCopyScript) {
+      btnCopyScript.addEventListener('click', () => {
+        this.copyScriptableWidgetCode(btnCopyScript);
+      });
+    }
+
+    const btnActionCopyAndClose = document.getElementById('btn-action-copy-and-close');
+    if (btnActionCopyAndClose) {
+      btnActionCopyAndClose.addEventListener('click', () => {
+        this.copyScriptableWidgetCode(btnActionCopyAndClose);
+        setTimeout(() => {
+          if (modalWidgetGuide) {
+            modalWidgetGuide.classList.add('hidden');
+            modalWidgetGuide.classList.remove('flex');
+          }
+        }, 800);
+      });
+    }
+
+    const widgetPreview = document.getElementById('widget-code-preview');
+    if (widgetPreview) {
+      widgetPreview.addEventListener('click', () => {
+        this.copyScriptableWidgetCode(btnCopyScript);
+      });
+    }
 
     if (this.btnClosePhotoModal) {
       this.btnClosePhotoModal.addEventListener('click', () => this.closePhotoModal());
@@ -375,33 +404,46 @@ export class ModalsComponent {
     const partnerAvatar = getUserAvatar(partner.avatar_url, partnerName);
 
     // Local preferences
-    const mealReminderActive = localStorage.getItem('ourmam_setting_meal_reminder') !== 'false';
-    const cameraGpsActive = localStorage.getItem('ourmam_setting_gps_camera') !== 'false';
-    const autoSaveActive = localStorage.getItem('ourmam_setting_auto_save') === 'true';
     const preferredCameraSource = localStorage.getItem('ourmam_setting_camera_source') || 'camera';
 
     this.profilesContainer.innerHTML = `
       <!-- 1. Hero Card: Ghép Đôi & Người Thương -->
-      <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-[#FFF8F5] to-[#FFEBE4] border border-orange-200/70 p-4 sm:p-5 shadow-sm flex flex-col gap-4">
+      <section class="shrink-0 relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-[#FFF8F5] to-[#FFEBE4] border border-orange-200/70 p-4 sm:p-5 shadow-sm flex flex-col gap-4">
         <div class="absolute -top-10 -right-10 w-32 h-32 bg-orange-200/30 rounded-full blur-2xl pointer-events-none"></div>
 
-        <!-- Top Status Bar: Connection status & Streak -->
-        <div class="flex items-center justify-between gap-2 pb-3 border-b border-orange-200/40">
-          ${isConnected ? `
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[11px] font-bold shadow-2xs">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="truncate max-w-[170px]">Đã kết nối cùng ${partnerName}</span>
-            </div>
-          ` : `
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs border border-orange-200/70 text-stone-600 text-[11px] font-semibold shadow-2xs">
-              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Chưa kết nối người thương</span>
-            </div>
-          `}
+        <!-- Top Status Bar: Connection status & Streak (Redesigned) -->
+        <div class="w-full shrink-0 bg-white/90 backdrop-blur-md rounded-2xl p-2 sm:p-2.5 border border-orange-200/80 shadow-xs flex items-center justify-between gap-2">
+          <!-- Connection Status -->
+          <div class="flex items-center gap-2 min-w-0">
+            ${isConnected ? `
+              <div class="w-7 h-7 rounded-xl bg-emerald-100/90 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="block text-[9px] uppercase tracking-wider text-emerald-700 font-bold leading-tight">Đang kết nối</span>
+                <span class="text-xs font-extrabold text-stone-900 truncate block mt-0.5 max-w-[130px] sm:max-w-[180px]" title="Cùng ${partnerName}">Cùng ${partnerName}</span>
+              </div>
+            ` : `
+              <div class="w-7 h-7 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center shrink-0 shadow-2xs">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-bold leading-tight">Trạng thái</span>
+                <span class="text-xs font-bold text-stone-700 truncate block mt-0.5">Chưa ghép đôi</span>
+              </div>
+            `}
+          </div>
 
-          <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/90 border border-orange-200/60 text-[#FF6433] text-[11px] font-bold shadow-2xs">
-            <span class="material-symbols-outlined text-xs">local_fire_department</span>
-            <span>${userStreak} ngày măm măm</span>
+          <!-- Subtle Divider -->
+          <div class="h-6 w-px bg-orange-200/60 shrink-0"></div>
+
+          <!-- Streak Pill / Badge -->
+          <div class="flex items-center gap-1.5 shrink-0 bg-gradient-to-r from-orange-50 to-amber-50 px-2.5 py-1 rounded-xl border border-orange-200/70 shadow-2xs">
+            <span class="material-symbols-outlined text-[#FF6433] text-base leading-none">local_fire_department</span>
+            <div class="flex items-baseline gap-1">
+              <span class="text-xs font-black text-[#FF6433] font-mono leading-none">${userStreak}</span>
+              <span class="text-[10px] font-bold text-stone-600 leading-none">ngày măm</span>
+            </div>
           </div>
         </div>
 
@@ -459,7 +501,7 @@ export class ModalsComponent {
           </div>
 
           <p class="mt-2 text-center text-xs text-stone-600 max-w-xs leading-relaxed">
-            Mời một nửa của bạn tham gia để cùng chia sẻ từng bữa ăn hàng ngày qua Widget tiện lợi!
+            Mời một nửa của bạn tham gia để cùng chia sẻ từng bữa ăn hàng ngày cùng nhau nhé! 💕
           </p>
         </div>
 
@@ -564,113 +606,75 @@ export class ModalsComponent {
         ` : ''}
       </section>
 
-      <!-- 2. Onboarding & Locket Feature Preferences (Thiết Lập Lần Đầu & Tiện Ích) -->
-      <section class="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col gap-3">
+      <!-- 2. iOS Scriptable Widget & Camera Preferences (Tiện Ích & Tùy Chọn) -->
+      <section class="shrink-0 bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-stone-100">
           <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#FF6433] text-xl">checklist</span>
+            <span class="material-symbols-outlined text-[#FF6433] text-xl">tune</span>
             <div>
-              <h3 class="text-xs sm:text-sm font-bold text-stone-900">Thiết Lập Lần Đầu</h3>
-              <p class="text-[10px] text-stone-500">Hoàn thành các bước để bắt đầu trải nghiệm trọn vẹn</p>
+              <h3 class="text-xs sm:text-sm font-bold text-stone-900">Tùy Chọn & Tiện Ích</h3>
+              <p class="text-[10px] text-stone-500">Widget màn hình chính iOS và cài đặt camera</p>
             </div>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-[#FF6433] font-bold">Tiện ích Locket</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-[#FF6433] font-bold">Tiện ích</span>
         </div>
 
-        <!-- Step 1: Add Widget Banner (High priority for Locket app) -->
-        <div class="p-3 rounded-2xl bg-gradient-to-r from-orange-50/90 via-[#FFF8F3] to-amber-50/70 border border-orange-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-          <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-2xl bg-[#FF6433] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <span class="material-symbols-outlined text-xl">widgets</span>
+        <!-- Scriptable iOS Home Screen Widget Banner (Locket Style) -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-orange-50/90 via-[#FFF8F3] to-amber-50/80 border border-orange-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+          <div class="flex items-start sm:items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#FF6433] to-[#FE8D52] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <span class="material-symbols-outlined text-2xl">widgets</span>
             </div>
             <div>
-              <div class="flex items-center gap-1.5">
-                <p class="text-xs font-bold text-stone-900">Đưa Widget ra màn hình chính</p>
-                <span class="px-1.5 py-0.2 rounded-md bg-[#FF6433] text-white text-[9px] font-bold">Quan trọng</span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <p class="text-xs sm:text-sm font-bold text-stone-900">Widget Màn Hình Chính (iOS)</p>
+                <span class="px-2 py-0.5 rounded-full bg-[#FF6433] text-white text-[9px] font-black uppercase tracking-wider">Scriptable • Locket</span>
               </div>
-              <p class="text-[11px] text-stone-500 mt-0.5">Xem ảnh món ăn người yêu gửi trực tiếp trên Home/Lockscreen</p>
+              <p class="text-[11px] text-stone-600 mt-1 leading-relaxed">
+                Đưa ảnh măm măm của người ấy ra trực tiếp màn hình chính iPhone. Tự động cập nhật & chạm mở app tức thì!
+              </p>
             </div>
           </div>
-          <button id="btn-open-widget-guide" class="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-[#FF6433] text-xs font-bold border border-orange-200 shadow-2xs active:scale-95 transition-all shrink-0 flex items-center justify-center gap-1 cursor-pointer" type="button">
-            <span>Xem cách thêm Widget</span>
+          <button id="btn-open-widget-guide" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-orange-50 text-[#FF6433] text-xs font-bold border border-orange-200 shadow-2xs active:scale-95 transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer" type="button">
+            <span class="material-symbols-outlined text-base">code</span>
+            <span>Lấy mã Script & Cài đặt</span>
             <span class="material-symbols-outlined text-sm">arrow_forward</span>
           </button>
         </div>
 
-        <!-- Step 2, 3, 4: Quick Interactive Preferences Toggles -->
-        <div class="flex flex-col divide-y divide-stone-100 pt-1">
-          <!-- Toggle 1: Notifications -->
-          <label class="py-2.5 flex items-center justify-between cursor-pointer group select-none">
-            <div class="pr-3 flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0 mt-0.5">
-                <span class="material-symbols-outlined text-base">notifications_active</span>
+        <!-- Camera Source Preference & Permission Guide -->
+        <div class="pt-1 flex flex-col gap-2">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 bg-stone-50 rounded-2xl border border-stone-200/60">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0">
+                <span class="material-symbols-outlined text-base">photo_camera</span>
               </div>
               <div>
-                <p class="text-xs font-bold text-stone-800 group-hover:text-[#FF6433] transition-colors">Thông báo nhắc giờ ăn</p>
-                <p class="text-[10px] text-stone-500 mt-0.5">Nhắc cả hai chụp ảnh bữa ăn đúng giờ (Sáng 8h, Trưa 12h, Tối 19h) và không bỏ bữa</p>
+                <p class="text-xs font-bold text-stone-800">Nguồn ảnh chụp</p>
+                <p class="text-[10px] text-stone-500">Chọn chế độ ưu tiên khi mở giao diện chụp</p>
               </div>
             </div>
-            <div class="toggle-switch-container">
-              <input type="checkbox" id="toggle-meal-reminder" ${mealReminderActive ? 'checked' : ''}>
-              <span class="toggle-switch-slider"></span>
-            </div>
-          </label>
 
-          <!-- Toggle 2: Camera & GPS -->
-          <div class="py-2.5 flex flex-col gap-2">
-            <label class="flex items-center justify-between cursor-pointer group select-none">
-              <div class="pr-3 flex items-start gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0 mt-0.5">
-                  <span class="material-symbols-outlined text-base">add_a_photo</span>
-                </div>
-                <div>
-                  <p class="text-xs font-bold text-stone-800 group-hover:text-[#FF6433] transition-colors">Quyền Camera & Lưu vị trí quán ăn</p>
-                  <p class="text-[10px] text-stone-500 mt-0.5">Chụp món ăn nhanh kèm định vị địa điểm hẹn hò để làm kỷ niệm</p>
-                </div>
-              </div>
-              <div class="toggle-switch-container">
-                <input type="checkbox" id="toggle-camera-gps" ${cameraGpsActive ? 'checked' : ''}>
-                <span class="toggle-switch-slider"></span>
-              </div>
-            </label>
-
-            <!-- Camera Source & Permission Guide Options -->
-            <div class="ml-10.5 pl-0.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 bg-stone-50 rounded-xl border border-stone-200/60 text-xs">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[11px] text-stone-600 font-semibold">Nguồn ảnh:</span>
-                <select id="select-camera-preferred-source" class="px-2 py-1 bg-white border border-stone-200 rounded-lg text-xs font-bold text-stone-800 focus:border-[#FF6433] focus:outline-none cursor-pointer">
-                  <option value="camera" ${preferredCameraSource === 'camera' ? 'selected' : ''}>📸 Camera trực tiếp</option>
-                  <option value="gallery" ${preferredCameraSource === 'gallery' ? 'selected' : ''}>🖼️ Chọn từ thư viện</option>
-                </select>
-              </div>
-              <button id="btn-settings-open-camera-guide" type="button" class="text-[11px] text-[#FF6433] hover:underline font-bold flex items-center gap-0.5 cursor-pointer self-end sm:self-auto">
-                <span class="material-symbols-outlined text-xs">help_outline</span>
-                <span>Cách bật "Luôn cho phép"</span>
-              </button>
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+              <select id="select-camera-preferred-source" class="px-2.5 py-1.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-800 focus:border-[#FF6433] focus:outline-none cursor-pointer shadow-2xs">
+                <option value="camera" ${preferredCameraSource === 'camera' ? 'selected' : ''}>📸 Camera trực tiếp</option>
+                <option value="gallery" ${preferredCameraSource === 'gallery' ? 'selected' : ''}>🖼️ Chọn từ thư viện</option>
+              </select>
             </div>
           </div>
 
-          <!-- Toggle 3: Auto Save to Album -->
-          <label class="py-2.5 flex items-center justify-between cursor-pointer group select-none">
-            <div class="pr-3 flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6433] shrink-0 mt-0.5">
-                <span class="material-symbols-outlined text-base">photo_library</span>
-              </div>
-              <div>
-                <p class="text-xs font-bold text-stone-800 group-hover:text-[#FF6433] transition-colors">Tự lưu ảnh vào Album máy</p>
-                <p class="text-[10px] text-stone-500 mt-0.5">Tự động tạo và lưu trữ ảnh chụp vào album "OurMam Diary"</p>
-              </div>
-            </div>
-            <div class="toggle-switch-container">
-              <input type="checkbox" id="toggle-auto-save" ${autoSaveActive ? 'checked' : ''}>
-              <span class="toggle-switch-slider"></span>
-            </div>
-          </label>
+          <div class="flex items-center justify-between px-1 text-xs">
+            <span class="text-[11px] text-stone-500">Gặp khó khăn khi mở máy ảnh?</span>
+            <button id="btn-settings-open-camera-guide" type="button" class="text-[11px] text-[#FF6433] hover:underline font-bold flex items-center gap-0.5 cursor-pointer">
+              <span class="material-symbols-outlined text-xs">help_outline</span>
+              <span>Cách bật "Luôn cho phép"</span>
+            </button>
+          </div>
         </div>
       </section>
 
       <!-- 3. Account & Help (Tài Khoản & Trợ Giúp) -->
-      <section class="bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col gap-3">
+      <section class="shrink-0 bg-white rounded-3xl p-4 sm:p-5 border border-stone-200/80 shadow-xs flex flex-col gap-3">
         <div class="flex items-center gap-2 pb-2 border-b border-stone-100">
           <span class="material-symbols-outlined text-[#FF6433] text-xl">manage_accounts</span>
           <h3 class="text-xs sm:text-sm font-bold text-stone-900">Tài Khoản & Trợ Giúp</h3>
@@ -948,31 +952,16 @@ export class ModalsComponent {
     if (btnOpenWidget && modalWidget) {
       btnOpenWidget.addEventListener('click', () => {
         soundHelper.playPop();
-        modalWidget.classList.remove('hidden');
-      });
-    }
-
-    // 9. Interactive Preferences Toggles
-    const toggleReminder = this.profilesContainer.querySelector('#toggle-meal-reminder');
-    if (toggleReminder) {
-      toggleReminder.addEventListener('change', (e) => {
-        const checked = e.target.checked;
-        localStorage.setItem('ourmam_setting_meal_reminder', checked);
-        soundHelper.playPop();
-        if (checked && 'Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
+        const previewCodeEl = document.getElementById('widget-code-preview');
+        if (previewCodeEl && (!previewCodeEl.textContent || previewCodeEl.textContent.trim().length === 0)) {
+          previewCodeEl.textContent = SCRIPTABLE_WIDGET_CODE;
         }
+        modalWidget.classList.remove('hidden');
+        modalWidget.classList.add('flex');
       });
     }
 
-    const toggleGps = this.profilesContainer.querySelector('#toggle-camera-gps');
-    if (toggleGps) {
-      toggleGps.addEventListener('change', (e) => {
-        localStorage.setItem('ourmam_setting_gps_camera', e.target.checked);
-        soundHelper.playPop();
-      });
-    }
-
+    // 9. Camera Source & Permission Guide
     const selectCamSource = this.profilesContainer.querySelector('#select-camera-preferred-source');
     if (selectCamSource) {
       selectCamSource.addEventListener('change', (e) => {
@@ -990,14 +979,6 @@ export class ModalsComponent {
           modal.classList.remove('hidden');
           modal.classList.add('flex');
         }
-      });
-    }
-
-    const toggleAutoSave = this.profilesContainer.querySelector('#toggle-auto-save');
-    if (toggleAutoSave) {
-      toggleAutoSave.addEventListener('change', (e) => {
-        localStorage.setItem('ourmam_setting_auto_save', e.target.checked);
-        soundHelper.playPop();
       });
     }
 
@@ -1188,5 +1169,68 @@ export class ModalsComponent {
       case 'snack': return '🧋 Ăn Vặt';
       default: return '🍱 Bữa Trưa';
     }
+  }
+
+  copyScriptableWidgetCode(buttonEl) {
+    soundHelper.playPop();
+    const originalContent = buttonEl ? buttonEl.innerHTML : null;
+
+    const onSuccess = () => {
+      if (buttonEl) {
+        buttonEl.innerHTML = `
+          <span class="material-symbols-outlined text-base">check_circle</span>
+          <span>Đã chép mã Script!</span>
+        `;
+        buttonEl.classList.add('!bg-emerald-600', 'hover:!bg-emerald-700');
+        setTimeout(() => {
+          if (originalContent) buttonEl.innerHTML = originalContent;
+          buttonEl.classList.remove('!bg-emerald-600', 'hover:!bg-emerald-700');
+        }, 2500);
+      }
+      this.showModalToast('✅ Đã sao chép mã Script OurMam! Mở Scriptable và dán vào nhé.');
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(SCRIPTABLE_WIDGET_CODE)
+        .then(onSuccess)
+        .catch(() => {
+          this.fallbackCopyText(SCRIPTABLE_WIDGET_CODE);
+          onSuccess();
+        });
+    } else {
+      this.fallbackCopyText(SCRIPTABLE_WIDGET_CODE);
+      onSuccess();
+    }
+  }
+
+  fallbackCopyText(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+    } catch (e) {
+      console.warn('Fallback copy failed', e);
+    }
+    document.body.removeChild(textArea);
+  }
+
+  showModalToast(message) {
+    const existing = document.getElementById('app-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-stone-900/95 backdrop-blur-md text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-white/20 transition-all duration-300';
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translate(-50%, -10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
   }
 }
