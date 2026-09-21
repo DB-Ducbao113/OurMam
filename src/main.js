@@ -425,7 +425,7 @@ class App {
     if (!this.currentUser || !file) return;
     try {
       this.showToast("Đang tải ảnh đại diện lên... ⏳");
-      const dataUrl = await compressImageFile(file, 400, 0.85);
+      const dataUrl = await compressImageFile(file, 400, 0.85, true);
       const blob = dataUrlToBlob(dataUrl);
       
       let uploadedUrl = null;

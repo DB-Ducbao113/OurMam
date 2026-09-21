@@ -7,7 +7,7 @@
 
 import { ENV } from '../config/env.js';
 
-export async function compressImageFile(file, maxWidth = ENV.IMAGE_MAX_WIDTH, quality = ENV.IMAGE_QUALITY) {
+export async function compressImageFile(file, maxWidth = ENV.IMAGE_MAX_WIDTH, quality = ENV.IMAGE_QUALITY, squareCrop = false) {
   return new Promise((resolve, reject) => {
     if (!file) return reject(new Error("No file provided"));
     
@@ -20,16 +20,37 @@ export async function compressImageFile(file, maxWidth = ENV.IMAGE_MAX_WIDTH, qu
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
+        
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceWidth = img.width;
+        let sourceHeight = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+        if (squareCrop) {
+          const minDim = Math.min(img.width, img.height);
+          sourceX = (img.width - minDim) / 2;
+          sourceY = (img.height - minDim) / 2;
+          sourceWidth = minDim;
+          sourceHeight = minDim;
+          
+          if (sourceWidth > maxWidth) {
+            width = maxWidth;
+            height = maxWidth;
+          } else {
+            width = sourceWidth;
+            height = sourceHeight;
+          }
+        } else {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
         }
 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
 
         // Convert to optimized JPEG data string
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
