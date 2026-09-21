@@ -97,6 +97,9 @@ export class AuthViewComponent {
           <div>
             <!-- Sheet Header -->
             <div class="mb-4 text-left">
+              <p class="text-stone-600 text-[13px] leading-relaxed mb-4 bg-orange-50/50 p-3 rounded-xl border border-orange-100">
+                <strong>OurMam</strong> là mạng xã hội thu nhỏ dành cho bạn bè và cặp đôi. Ứng dụng giúp bạn chụp ảnh món ăn mỗi ngày, ghi chép lượng Kcal và địa điểm để chia sẻ ngay lập tức lên màn hình chính của những người thân yêu nhất.
+              </p>
               <h1 id="auth-title" class="text-[23px] font-bold text-stone-900 tracking-tight leading-snug">
                 ${this.isSignUp ? 'Tạo Tài Khoản' : 'Đăng nhập'}
               </h1>
