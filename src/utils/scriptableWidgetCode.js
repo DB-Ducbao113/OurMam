@@ -169,19 +169,20 @@ function createCoverImage(img, targetWidth, targetHeight) {
   return ctx.getImage();
 }
 
-// ── Trích xuất message, không lặp từ ─────────────────────────────────────────
 function extractMessage(meal) {
   const dish = cleanStr(meal.dish_name || "");
+  const loc = cleanStr(meal.location || "");
+  const kcal = meal.calories ? \`\${meal.calories} kcal\` : "";
+  
+  let parts = [];
+  if (dish) parts.push(dish);
+  if (loc) parts.push(\`📍 \${loc}\`);
+  if (kcal) parts.push(\`🔥 \${kcal}\`);
+  
+  if (parts.length > 0) return parts.join(" • ");
+  
   const caption = cleanStr(meal.caption || "");
-  const nd = normalize(dish);
-  const nc = normalize(caption);
-
-  if (caption && dish) {
-    if (nd === nc || nc.includes(nd)) return caption;
-    if (nd.includes(nc)) return dish;
-    return \`\${dish} • \${caption}\`;
-  }
-  return caption || dish || "OurMam 🍲";
+  return caption || "OurMam 🍲";
 }
 
 function normalize(s) {
