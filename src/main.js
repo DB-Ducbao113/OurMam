@@ -110,9 +110,14 @@ class App {
     this.connections = await profileService.getConnections(userId);
     this.renderPartnerFeed();
 
-    // 3. Fetch Meals & Chat
+    // 3. Fetch Meals, Messages, & Pending Requests
     this.meals = await mealService.getMeals();
     this.messages = await chatService.getMessages();
+    this.pendingRequests = await profileService.getPendingRequests();
+    if (this.modals && this.modals.setPendingRequests) {
+      this.modals.setPendingRequests(this.pendingRequests);
+    }
+    
     this.renderPartnerFeed();
   }
 
@@ -172,7 +177,8 @@ class App {
       (newName) => this.handleUpdateProfile(newName),
       (file) => this.handleUpdateAvatar(file),
       (newPassword) => this.handleUpdatePassword(newPassword),
-      (mealId) => this.handleDeleteMeal(mealId)
+      (mealId) => this.handleDeleteMeal(mealId),
+      (connectionId, isAccepted, reqId, relType) => this.handleRespondRequest(connectionId, isAccepted, reqId, relType)
     );
 
     // 2. Header
@@ -655,6 +661,24 @@ class App {
       this.authView.show();
     } finally {
       this._isLoggingOut = false;
+    }
+  }
+
+  async handleRespondRequest(connectionId, isAccepted, reqId, relType) {
+    if (!this.currentUser) return;
+    this.showLoader();
+    try {
+      const ok = await profileService.respondToRequest(connectionId, isAccepted, reqId, relType);
+      if (ok) {
+        this.showToast(isAccepted ? 'Đã chấp nhận ghép đôi! 💕' : 'Đã từ chối lời mời');
+        await this.loadUserData(this.currentUser.id);
+      } else {
+        this.showToast('Lỗi khi phản hồi yêu cầu!');
+      }
+    } catch (e) {
+      this.showToast('Lỗi khi phản hồi yêu cầu!');
+    } finally {
+      this.hideLoader();
     }
   }
 

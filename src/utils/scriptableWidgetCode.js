@@ -81,56 +81,120 @@ async function createWidget(family) {
     loadImage(meal.user_avatar),
   ]);
 
-  // ── 4. Ảnh full-bleed (aspect fill, không bị lặp ô gạch) ────────────────
-  if (img) {
-    w.backgroundImage = createCoverImage(img, targetW, targetH);
+  // ── 4. Xây dựng giao diện dựa trên kích thước ──────────────────────────────
+  if (family === "large") {
+    // Bố cục chia đôi cho size Large
+    const mainStack = w.addStack();
+    mainStack.layoutHorizontally();
+
+    // Nửa trái: Ảnh
+    const leftStack = mainStack.addStack();
+    leftStack.size = new Size(targetW / 2, targetH);
+    if (img) {
+      leftStack.backgroundImage = createCoverImage(img, targetW / 2, targetH);
+    } else {
+      leftStack.backgroundColor = new Color("#1C1917");
+    }
+
+    // Nửa phải: Thông tin
+    const rightStack = mainStack.addStack();
+    rightStack.size = new Size(targetW / 2, targetH);
+    rightStack.backgroundColor = new Color("#0F0F0F");
+    rightStack.layoutVertically();
+    rightStack.setPadding(24, 20, 24, 20);
+
+    rightStack.addSpacer();
+
+    // Avatar
+    if (avatarImg) {
+      const aSize = 44;
+      const avatarCtx = new DrawContext();
+      avatarCtx.size = new Size(aSize * 3, aSize * 3);
+      avatarCtx.opaque = false;
+      avatarCtx.respectScreenScale = true;
+      avatarCtx.setFillColor(Color.clear());
+      avatarCtx.fillEllipse(new Rect(0, 0, aSize * 3, aSize * 3));
+      avatarCtx.drawImageInRect(avatarImg, new Rect(0, 0, aSize * 3, aSize * 3));
+      
+      const avatarEl = rightStack.addImage(avatarCtx.getImage());
+      avatarEl.imageSize = new Size(aSize, aSize);
+      avatarEl.cornerRadius = aSize / 2;
+      rightStack.addSpacer(16);
+    }
+
+    // Tên món
+    const dish = cleanStr(meal.dish_name) || "OurMam";
+    const dishLabel = rightStack.addText(dish);
+    dishLabel.textColor = Color.white();
+    dishLabel.font = Font.boldSystemFont(22);
+    dishLabel.minimumScaleFactor = 0.5;
+
+    rightStack.addSpacer(12);
+
+    // Thông tin phụ
+    if (meal.calories) {
+      const calLabel = rightStack.addText(\`🔥 \${meal.calories} kcal\`);
+      calLabel.textColor = new Color("#FF6433");
+      calLabel.font = Font.boldSystemFont(16);
+      rightStack.addSpacer(6);
+    }
+
+    if (meal.location) {
+      const locLabel = rightStack.addText(\`📍 \${cleanStr(meal.location)}\`);
+      locLabel.textColor = new Color("#A8A29E");
+      locLabel.font = Font.mediumSystemFont(15);
+      locLabel.minimumScaleFactor = 0.8;
+      locLabel.lineLimit = 2;
+    }
+
+    rightStack.addSpacer();
   } else {
-    w.backgroundColor = new Color("#1C1917");
+    // ── Bố cục tràn viền (Full-bleed) cho size Small & Medium ──────────────
+    if (img) {
+      w.backgroundImage = createCoverImage(img, targetW, targetH);
+    } else {
+      w.backgroundColor = new Color("#1C1917");
+    }
+
+    const message = extractMessage(meal);
+    const overlay = w.addStack();
+    overlay.layoutVertically();
+    overlay.setPadding(0, 10, bottomPad, 10);
+    overlay.addSpacer();
+
+    const pillRow = overlay.addStack();
+    pillRow.layoutHorizontally();
+    pillRow.centerAlignContent();
+    pillRow.addSpacer();
+
+    const pill = pillRow.addStack();
+    pill.backgroundColor = new Color("#000000", 0.62);
+    pill.cornerRadius = 18;
+    pill.setPadding(6, 10, 6, 14);
+    pill.centerAlignContent();
+    pill.spacing = 6;
+
+    if (avatarImg) {
+      const avatarCtx = new DrawContext();
+      avatarCtx.size = new Size(avatarSize * 3, avatarSize * 3);
+      avatarCtx.opaque = false;
+      avatarCtx.respectScreenScale = true;
+      avatarCtx.setFillColor(Color.clear());
+      avatarCtx.fillEllipse(new Rect(0, 0, avatarSize * 3, avatarSize * 3));
+      avatarCtx.drawImageInRect(avatarImg, new Rect(0, 0, avatarSize * 3, avatarSize * 3));
+      
+      const avatarEl = pill.addImage(avatarCtx.getImage());
+      avatarEl.imageSize = new Size(avatarSize, avatarSize);
+      avatarEl.cornerRadius = avatarSize / 2;
+    }
+
+    const label = pill.addText(message);
+    label.textColor = Color.white();
+    label.font = Font.boldSystemFont(fontSize);
+    label.lineLimit = 1;
+
+    pillRow.addSpacer();
   }
-
-  // ── 5. Caption pill + Avatar ở đáy ───────────────────────────────────────
-  const message = extractMessage(meal);
-
-  const overlay = w.addStack();
-  overlay.layoutVertically();
-  overlay.setPadding(0, 10, bottomPad, 10);
-  overlay.addSpacer();
-
-  const pillRow = overlay.addStack();
-  pillRow.layoutHorizontally();
-  pillRow.centerAlignContent();
-  pillRow.addSpacer();
-
-  const pill = pillRow.addStack();
-  pill.backgroundColor = new Color("#000000", 0.62);
-  pill.cornerRadius = 18;
-  pill.setPadding(6, 10, 6, 14);
-  pill.centerAlignContent();
-  pill.spacing = 6;
-
-  // Avatar tròn trong pill (nếu có)
-  if (avatarImg) {
-    const avatarCtx = new DrawContext();
-    avatarCtx.size = new Size(avatarSize * 3, avatarSize * 3);
-    avatarCtx.opaque = false;
-    avatarCtx.respectScreenScale = true;
-    // Vẽ hình tròn clip mask
-    avatarCtx.setFillColor(Color.clear());
-    avatarCtx.fillEllipse(new Rect(0, 0, avatarSize * 3, avatarSize * 3));
-    avatarCtx.drawImageInRect(avatarImg, new Rect(0, 0, avatarSize * 3, avatarSize * 3));
-    const avatarRound = avatarCtx.getImage();
-
-    const avatarEl = pill.addImage(avatarRound);
-    avatarEl.imageSize = new Size(avatarSize, avatarSize);
-    avatarEl.cornerRadius = avatarSize / 2;
-  }
-
-  const label = pill.addText(message);
-  label.textColor = Color.white();
-  label.font = Font.boldSystemFont(fontSize);
-  label.lineLimit = 1;
-
-  pillRow.addSpacer();
 
   return w;
 }
