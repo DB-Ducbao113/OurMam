@@ -173,7 +173,7 @@ class App {
       this.authView.hide();
       this.render();
       if (this.currentUser) {
-        this.showToast(\`Chào mừng \${this.currentUser.display_name}! 💕\`);
+        this.showToast(`Chào mừng ${this.currentUser.display_name}! 💕`);
       }
     });
 
