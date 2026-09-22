@@ -412,16 +412,21 @@ export class AuthViewComponent {
     if (btnGoogle) {
       btnGoogle.addEventListener('click', async () => {
         soundHelper.playPop();
+        const origContent = btnGoogle.innerHTML;
+        btnGoogle.innerHTML = '<span class="material-symbols-outlined animate-spin text-[#FF6433]">progress_activity</span><span>Đang chuyển hướng...</span>';
+        btnGoogle.disabled = true;
         try {
           const { error } = await api.signInWithGoogle();
           if (error) throw error;
         } catch (err) {
-          console.error("Google auth error:", err);
+          console.error('Google Auth Error:', err);
           const errorEl = document.getElementById('auth-error-msg');
           if (errorEl) {
             errorEl.textContent = err.message || "Không thể kết nối Google Auth. Vui lòng thử lại!";
             errorEl.classList.remove('hidden');
           }
+          btnGoogle.innerHTML = origContent;
+          btnGoogle.disabled = false;
         }
       });
     }

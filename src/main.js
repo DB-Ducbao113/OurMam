@@ -46,6 +46,23 @@ class App {
     }
   }
 
+  showLoader() {
+    const loader = document.getElementById('initial-loader');
+    if (loader) {
+      loader.classList.remove('hidden');
+      loader.classList.add('flex');
+      loader.style.opacity = '1';
+    }
+  }
+
+  hideLoader() {
+    const loader = document.getElementById('initial-loader');
+    if (loader) {
+      loader.classList.add('hidden');
+      loader.classList.remove('flex');
+    }
+  }
+
   async start() {
     try {
       if (api.client) {
@@ -73,6 +90,7 @@ class App {
         this.session = session;
         this.currentUser = profile;
         await this.loadUserData(session.user.id);
+        this.hideLoader();
         this.authView.hide();
         this.render();
         return;
@@ -83,18 +101,22 @@ class App {
       if (isLocalAuth) {
         this.currentUser = profileService.getCurrentUser();
         if (this.currentUser) {
+          this.hideLoader();
           this.authView.hide();
           this.meals = await mealService.getMeals();
           this.messages = await chatService.getMessages();
           this.render();
         } else {
+          this.hideLoader();
           this.authView.show();
         }
       } else {
+        this.hideLoader();
         this.authView.show();
       }
     } catch (err) {
       console.error("App start error:", err);
+      this.hideLoader();
       await this.handleLogout(false);
     }
   }
@@ -127,16 +149,31 @@ class App {
 
       if (user && user.id) {
         await this.loadUserData(user.id);
+        
+        if (!this.currentUser) {
+          this.currentUser = await profileService.ensureProfile(user);
+          if (this.currentUser) {
+            this.connections = await profileService.getConnections(user.id);
+            this.meals = await mealService.getMeals();
+            this.messages = await chatService.getMessages();
+            this.pendingRequests = await profileService.getPendingRequests();
+            if (this.modals && this.modals.setPendingRequests) {
+              this.modals.setPendingRequests(this.pendingRequests);
+            }
+          }
+        }
+
         if (customDisplayName && this.currentUser) {
           this.currentUser.display_name = customDisplayName;
           await profileService.updateDisplayName(user.id, customDisplayName);
         }
       }
 
+      this.hideLoader();
       this.authView.hide();
       this.render();
       if (this.currentUser) {
-        this.showToast(`Chào mừng ${this.currentUser.display_name}! 💕`);
+        this.showToast(\`Chào mừng \${this.currentUser.display_name}! 💕\`);
       }
     });
 
@@ -144,6 +181,7 @@ class App {
     if (api.client) {
       api.client.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
+          this.showLoader();
           let profile = await profileService.fetchProfile(session.user.id);
           if (!profile) {
             profile = await profileService.ensureProfile(session.user);
@@ -153,6 +191,7 @@ class App {
             this.currentUser = profile;
             localStorage.setItem('ourmam_auth', 'true');
             await this.loadUserData(session.user.id);
+            this.hideLoader();
             this.authView.hide();
             this.render();
             this.cleanOAuthUrl();
