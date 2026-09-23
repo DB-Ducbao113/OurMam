@@ -149,7 +149,8 @@ export class LocketFeedComponent {
     let isLatestFallback = false;
 
     if (todayMeals.length > 0) {
-      displayMeals = todayMeals;
+      // Keep the home feed as a short preview; the calendar is the full archive.
+      displayMeals = todayMeals.slice(0, 2);
     } else if (pool.length > 0) {
       // Fallback: show the single most recent meal
       displayMeals = [pool[0]];
@@ -214,11 +215,11 @@ export class LocketFeedComponent {
 
     // Update History Footer Link
     if (this.historyFooterEl) {
-      if (this.meals.length > 0) {
+      if (pool.length > displayMeals.length) {
         this.historyFooterEl.classList.remove('hidden');
         if (this.historyCountDescEl) {
-          const pastCount = this.meals.length;
-          this.historyCountDescEl.textContent = `Đã lưu trữ toàn bộ ${pastCount} khoảnh khắc trong tab Lịch sử`;
+          const remainingCount = pool.length - displayMeals.length;
+          this.historyCountDescEl.textContent = `Còn ${remainingCount} khoảnh khắc trong Lịch sử`;
         }
       } else {
         this.historyFooterEl.classList.add('hidden');
@@ -228,7 +229,7 @@ export class LocketFeedComponent {
 
   createMealCard(meal, idx, isLatestFallback = false) {
     const card = document.createElement('article');
-    card.className = 'w-full bg-surface-container-lowest rounded-3xl p-3.5 border border-outline-variant/30 shadow-xs flex flex-col space-y-3 transition-all';
+    card.className = 'relative w-full bg-surface-container-lowest rounded-3xl p-3.5 border border-outline-variant/30 shadow-xs flex flex-col space-y-3 transition-all';
     card.dataset.mealId = meal.id || idx;
 
     const isMe = this.currentUser && meal.user_id === this.currentUser.id;
@@ -379,9 +380,17 @@ export class LocketFeedComponent {
       (!isMe ? `
       <div class="flex items-center gap-2 pt-0.5">
         <!-- Quick Heart Reaction Button -->
-        <button type="button" class="btn-card-heart p-2 rounded-full bg-surface-container-low hover:bg-rose-50 text-rose-500 active:scale-90 transition-all flex items-center justify-center border border-outline-variant/30" title="Thả tim cho ảnh này">
-          <span class="material-symbols-outlined text-xl filled text-rose-500">favorite</span>
-        </button>
+        <div class="relative">
+          <button type="button" class="btn-card-reactions p-2 rounded-full bg-surface-container-low hover:bg-rose-50 text-rose-500 active:scale-90 transition-all flex items-center justify-center border border-outline-variant/30" title="Thả cảm xúc cho ảnh này" aria-label="Thả cảm xúc">
+            <span class="material-symbols-outlined text-xl">add_reaction</span>
+          </button>
+          <div class="reaction-picker hidden absolute bottom-full left-0 z-20 mb-2 p-2 rounded-2xl bg-white border border-outline-variant/40 shadow-lg flex gap-1" role="group" aria-label="Chọn cảm xúc">
+            ${[
+              ['❤️', 'Yêu thích'], ['😍', 'Đáng yêu'], ['😂', 'Vui quá'],
+              ['🥰', 'Thương quá'], ['😋', 'Ngon quá'], ['👏', 'Tuyệt vời']
+            ].map(([emoji, label]) => `<button type="button" class="btn-pick-reaction w-9 h-9 rounded-xl hover:bg-orange-50 text-xl active:scale-90" data-emoji="${emoji}" data-label="${label}" aria-label="${label}">${emoji}</button>`).join('')}
+          </div>
+        </div>
 
         <!-- Quick Reply Form -->
         <form class="form-card-reply flex-1 flex items-center gap-1.5 bg-surface-container-low rounded-full px-3 py-1.5 border border-outline-variant/30 focus-within:border-primary focus-within:bg-white transition-all">
@@ -476,20 +485,21 @@ export class LocketFeedComponent {
       }
     }
 
-    // Bind Heart Button Click -> Send Heart
-    const heartBtn = card.querySelector('.btn-card-heart');
-    if (heartBtn) {
-      heartBtn.addEventListener('click', (e) => {
+    // Open the reaction picker, then send the selected reaction.
+    const reactionBtn = card.querySelector('.btn-card-reactions');
+    const reactionPicker = card.querySelector('.reaction-picker');
+    if (reactionBtn && reactionPicker) {
+      reactionBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        soundHelper.playPop();
-
-        // Little bounce animation
-        heartBtn.classList.add('scale-125', 'bg-rose-100');
-        setTimeout(() => heartBtn.classList.remove('scale-125', 'bg-rose-100'), 300);
-
-        if (this.onSendReaction) {
-          this.onSendReaction(meal, '❤️', 'Yêu thích');
-        }
+        reactionPicker.classList.toggle('hidden');
+      });
+      reactionPicker.querySelectorAll('.btn-pick-reaction').forEach(button => {
+        button.addEventListener('click', (e) => {
+          e.stopPropagation();
+          soundHelper.playPop();
+          reactionPicker.classList.add('hidden');
+          this.onSendReaction?.(meal, button.dataset.emoji, button.dataset.label);
+        });
       });
     }
 

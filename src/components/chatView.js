@@ -313,7 +313,7 @@ export class ChatViewComponent {
   render(messages, currentUserId, connections = [], currentUser = null) {
     this.messages = messages || [];
     this.currentUserId = currentUserId;
-    this.connections = connections || [];
+    this.connections = (connections || []).filter(connection => !connection.status || connection.status === 'accepted');
     this.currentUser = currentUser;
 
     const emptyContainer = this.container.querySelector('#chat-empty-container');

@@ -22,6 +22,8 @@ export class CalendarViewComponent {
     this.currentDate = new Date(); // Month currently viewed
     this.selectedDate = new Date(); // Day currently selected by user
     this.meals = [];
+    this.currentUser = null;
+    this.connections = [];
     this.onSelectMeal = onSelectMeal;
     this.onDeleteMealRequest = onDeleteMealRequest;
 
@@ -43,6 +45,11 @@ export class CalendarViewComponent {
   setMeals(meals) {
     this.meals = meals;
     this.render();
+  }
+
+  setContext(currentUser, connections = []) {
+    this.currentUser = currentUser;
+    this.connections = connections || [];
   }
 
   render() {
@@ -230,46 +237,64 @@ export class CalendarViewComponent {
       return;
     }
 
-    meals.forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'relative w-44 shrink-0 bg-surface-container-lowest rounded-2xl p-2.5 border border-outline-variant/30 soft-tactile-shadow flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform hover:border-orange-200';
-      const timeStr = new Date(m.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      const avatarUrl = getUserAvatar(m.user_avatar, m.user_name || 'Người dùng');
-
-      card.innerHTML = `
-        <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-xs">
-          <img class="w-full h-full object-cover" src="${m.photo_url}" alt="${m.dish_name}">
-          <span class="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full font-medium">${timeStr}</span>
-          
-          <!-- Delete button on calendar item -->
-          <button type="button" class="btn-cal-item-delete absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-xs transition-all active:scale-90 cursor-pointer shadow-xs" title="Xoá ảnh này">
-            <span class="material-symbols-outlined text-xs">delete</span>
-          </button>
-        </div>
-        <div class="flex items-center justify-between gap-1">
-          <span class="text-xs font-bold text-on-surface truncate">${m.dish_name || 'Món ngon'}</span>
-          <img class="w-5 h-5 rounded-full object-cover ring-1 ring-outline-variant/40 shrink-0" src="${avatarUrl}" alt="${m.user_name}">
-        </div>
-        <div class="flex items-center justify-between text-[11px] text-tertiary pt-0.5 border-t border-outline-variant/20">
-          <span class="truncate">${m.user_name}</span>
-          <span class="text-primary font-bold shrink-0">🍜❤️</span>
-        </div>
-      `;
-
-      const delBtn = card.querySelector('.btn-cal-item-delete');
-      if (delBtn) {
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (this.onDeleteMealRequest) {
-            this.onDeleteMealRequest(m);
-          } else if (this.onSelectMeal) {
-            this.onSelectMeal(m);
-          }
-        });
+    const users = new Map();
+    if (this.currentUser?.id) users.set(this.currentUser.id, this.currentUser);
+    const accepted = (this.connections || []).filter(connection => !connection.status || connection.status === 'accepted');
+    const couple = accepted.find(connection => connection.relationship_type === 'couple');
+    if (couple?.friend?.id && !users.has(couple.friend.id)) users.set(couple.friend.id, couple.friend);
+    meals.forEach(meal => {
+      if (meal.user_id && !users.has(meal.user_id)) {
+        users.set(meal.user_id, { id: meal.user_id, display_name: meal.user_name || 'Người dùng', avatar_url: meal.user_avatar });
       }
+    });
 
-      card.addEventListener('click', () => this.onSelectMeal(m));
-      this.mealsContainer.appendChild(card);
+    const periods = [
+      { key: 'morning', label: 'Sáng', from: 0, to: 11, icon: '☀️' },
+      { key: 'noon', label: 'Trưa', from: 11, to: 16, icon: '🌤️' },
+      { key: 'evening', label: 'Chiều / tối', from: 16, to: 24, icon: '🌙' }
+    ];
+    this.mealsContainer.className = 'grid grid-cols-2 gap-2 py-2 items-start';
+
+    [...users.values()].forEach(user => {
+      const userMeals = meals.filter(meal => meal.user_id === user.id);
+      const column = document.createElement('section');
+      column.className = 'min-w-0 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-2 sm:p-3 soft-tactile-shadow';
+      const name = user.display_name || 'Người dùng';
+      const avatar = getUserAvatar(user.avatar_url, name);
+      column.innerHTML = `<header class="flex items-center gap-2 pb-2 mb-2 border-b border-outline-variant/20"><img class="w-7 h-7 rounded-full object-cover" src="${avatar}" alt=""><strong class="text-xs truncate">${name}</strong><span class="ml-auto text-[10px] text-tertiary">${userMeals.length} ảnh</span></header>`;
+
+      periods.forEach(period => {
+        const periodMeals = userMeals.filter(meal => {
+          const hour = new Date(meal.created_at).getHours();
+          return hour >= period.from && hour < period.to;
+        });
+        const group = document.createElement('div');
+        group.className = 'mb-2 last:mb-0';
+        group.innerHTML = `<h4 class="text-[10px] font-bold text-tertiary mb-1">${period.icon} ${period.label}</h4>`;
+        if (!periodMeals.length) {
+          group.insertAdjacentHTML('beforeend', '<p class="text-[10px] text-stone-300 px-1 pb-1">Chưa có ảnh</p>');
+        } else {
+          const grid = document.createElement('div');
+          grid.className = 'grid grid-cols-2 gap-1.5';
+          periodMeals.forEach(meal => {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'relative aspect-square overflow-hidden rounded-xl text-left';
+            const time = new Date(meal.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            card.innerHTML = `<img class="w-full h-full object-cover" src="${meal.photo_url}" alt="${meal.dish_name || 'Món ngon'}"><span class="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[9px] text-white truncate">${time} · ${meal.dish_name || 'Món ngon'}</span><span class="btn-cal-item-delete absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center" title="Xóa ảnh"><span class="material-symbols-outlined text-[12px]">delete</span></span>`;
+            card.addEventListener('click', () => this.onSelectMeal?.(meal));
+            card.querySelector('.btn-cal-item-delete').addEventListener('click', event => {
+              event.stopPropagation();
+              if (this.onDeleteMealRequest) this.onDeleteMealRequest(meal);
+              else this.onSelectMeal?.(meal);
+            });
+            grid.appendChild(card);
+          });
+          group.appendChild(grid);
+        }
+        column.appendChild(group);
+      });
+      this.mealsContainer.appendChild(column);
     });
   }
 }

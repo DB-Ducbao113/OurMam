@@ -452,46 +452,13 @@ class ApiService {
       known[targetUser.id] = targetUser;
       this.setLocal('ourmam_known_profiles', known);
 
-      // 2. Direct insert or update connection A -> B
-      const existingAB = await this.dbQuery(`connections?user_id=eq.${sessionUser.id}&friend_id=eq.${targetUser.id}&select=id`);
-      if (existingAB && existingAB.length > 0) {
-        await this.dbQuery(`connections?id=eq.${existingAB[0].id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ relationship_type: relationshipType, status: 'accepted' })
-        });
-      } else {
-        await this.dbQuery('connections', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_id: sessionUser.id,
-            friend_id: targetUser.id,
-            relationship_type: relationshipType,
-            status: 'accepted'
-          })
-        });
-      }
-
-      // 3. Insert or update reverse connection B -> A
-      try {
-        const existingBA = await this.dbQuery(`connections?user_id=eq.${targetUser.id}&friend_id=eq.${sessionUser.id}&select=id`);
-        if (existingBA && existingBA.length > 0) {
-          await this.dbQuery(`connections?id=eq.${existingBA[0].id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ relationship_type: relationshipType, status: 'accepted' })
-          });
-        } else {
-          await this.dbQuery('connections', {
-            method: 'POST',
-            body: JSON.stringify({
-              user_id: targetUser.id,
-              friend_id: sessionUser.id,
-              relationship_type: relationshipType,
-              status: 'accepted'
-            })
-          });
-        }
-      } catch (revErr) {
-        console.warn("Reverse connection insert warning:", revErr);
+      const { data: requestResult, error: requestError } = await this.client.rpc('request_connection', {
+        target_user_code: cleanCode,
+        requested_relationship_type: relationshipType
+      });
+      if (requestError) throw requestError;
+      if (!requestResult?.success) {
+        return { success: false, message: requestResult?.message || 'Không thể gửi lời mời kết nối.' };
       }
 
       return {
@@ -499,9 +466,8 @@ class ApiService {
         friend_id: targetUser.id,
         friend_name: targetUser.display_name,
         relationship_type: relationshipType,
-        message: relationshipType === 'couple' 
-          ? `Đã kết nối cặp đôi với ${targetUser.display_name} thành công! 💕` 
-          : `Đã kết bạn với ${targetUser.display_name} thành công! 🥑`
+        status: 'pending',
+        message: `Đã gửi lời mời đến ${targetUser.display_name}. Chờ họ đồng ý để kết nối nhé!`
       };
     } catch (err) {
       console.error("addConnection error:", err);
@@ -529,17 +495,27 @@ class ApiService {
       const rawConns = await this.dbQuery(`connections?or=(user_id.eq.${normalizedUserId},friend_id.eq.${normalizedUserId})&select=*`);
 
       if (!rawConns || rawConns.length === 0) {
-        return this.getLocal('ourmam_connections', []);
+        this.setLocal('ourmam_connections', []);
+        return [];
       }
 
+      // Only accepted links and requests addressed to this account are shown.
+      const visibleConns = rawConns.filter((conn) =>
+        conn.status === 'accepted' ||
+        (conn.status === 'pending' && String(conn.friend_id).toLowerCase() === normalizedUserId)
+      );
+
       // 2. Extract partner user IDs
-      const partnerIds = rawConns.map(c => {
+      const partnerIds = visibleConns.map(c => {
         const uId = String(c.user_id).trim().toLowerCase();
         return uId === normalizedUserId ? c.friend_id : c.user_id;
       }).filter(Boolean);
       const uniquePartnerIds = [...new Set(partnerIds)];
 
-      if (uniquePartnerIds.length === 0) return [];
+      if (uniquePartnerIds.length === 0) {
+        this.setLocal('ourmam_connections', []);
+        return [];
+      }
 
       const friendProfiles = await this.dbQuery(`profiles?id=in.(${uniquePartnerIds.join(',')})&select=*`);
 
@@ -562,7 +538,7 @@ class ApiService {
       const enriched = [];
       const localNicks = this.getLocal('ourmam_nicknames_' + normalizedUserId, {});
 
-      for (const conn of rawConns) {
+      for (const conn of visibleConns) {
         const uId = String(conn.user_id).trim().toLowerCase();
         const otherId = uId === normalizedUserId ? conn.friend_id : conn.user_id;
         if (seenFriendIds.has(otherId)) continue;
@@ -602,6 +578,19 @@ class ApiService {
       console.warn("getConnections error:", err);
       return this.getLocal('ourmam_connections', []);
     }
+  }
+
+  async respondToConnectionRequest(requesterId, approve) {
+    if (!this.client || !requesterId) return { success: false, message: 'Không thể xác định lời mời.' };
+    const { data, error } = await this.client.rpc('respond_to_connection_request', {
+      requester_user_id: requesterId,
+      approve_request: Boolean(approve)
+    });
+    if (error) {
+      console.error('respondToConnectionRequest error:', error);
+      return { success: false, message: error.message || 'Không thể xử lý lời mời.' };
+    }
+    return data || { success: false, message: 'Lời mời không còn tồn tại.' };
   }
 
   async updateNickname(userId, friendId, nickname) {

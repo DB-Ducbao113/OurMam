@@ -4,17 +4,17 @@
  * ==============================================================================
  */
 
-import { api } from './services/api.js?v=2026091999';
+import { api } from './services/api.js?v=2026092302';
 import { mealService } from './services/mealService.js?v=2026091999';
-import { profileService } from './services/profileService.js?v=2026091999';
+import { profileService } from './services/profileService.js?v=2026092302';
 import { chatService } from './services/chatService.js?v=2026091999';
 import { HeaderComponent } from './components/header.js?v=2026091999';
-import { LocketFeedComponent } from './components/locketFeed.js?v=2026092107';
+import { LocketFeedComponent } from './components/locketFeed.js?v=2026092302';
 import { CameraViewComponent } from './components/cameraView.js?v=2026092107';
-import { CalendarViewComponent } from './components/calendarView.js?v=2026091999';
+import { CalendarViewComponent } from './components/calendarView.js?v=2026092302';
 import { ChatViewComponent } from './components/chatView.js?v=2026092102';
 import { NavigationComponent } from './components/navigation.js?v=2026091999';
-import { ModalsComponent } from './components/modals.js?v=2026092103';
+import { ModalsComponent } from './components/modals.js?v=2026092302';
 import { AuthViewComponent } from './components/authView.js?v=2026092100';
 import { soundHelper } from './utils/soundHelper.js?v=2026091999';
 import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
@@ -174,7 +174,8 @@ class App {
       (newPassword) => this.handleUpdatePassword(newPassword),
       (mealId) => this.handleDeleteMeal(mealId),
       (partnerId) => this.handleRemoveCouple(partnerId),
-      () => this.handleDeleteAccount()
+      () => this.handleDeleteAccount(),
+      (requesterId, approve) => this.handleConnectionRequest(requesterId, approve)
     );
 
     // 2. Header
@@ -249,6 +250,7 @@ class App {
     if (!this.currentUser) return;
     this.header.render(this.currentUser);
     this.renderPartnerFeed();
+    this.calendarView.setContext(this.currentUser, this.connections);
     this.calendarView.setMeals(this.meals);
     this.chatView.render(this.messages, this.currentUser.id, this.connections, this.currentUser);
 
@@ -305,7 +307,8 @@ class App {
       conns = api.getLocal('ourmam_connections', []);
     }
     if (conns && conns.length > 0) {
-      const coupleConn = conns.find(c => c.relationship_type === 'couple');
+      const acceptedConnections = conns.filter(c => !c.status || c.status === 'accepted');
+      const coupleConn = acceptedConnections.find(c => c.relationship_type === 'couple');
       if (coupleConn?.friend) {
         const customNick = coupleConn.friend.custom_nickname || coupleConn.nickname || null;
         return {
@@ -316,14 +319,14 @@ class App {
           relationship_type: 'couple'
         };
       }
-      if (conns[0]?.friend) {
-        const customNick = conns[0].friend.custom_nickname || conns[0].nickname || null;
+      if (acceptedConnections[0]?.friend) {
+        const customNick = acceptedConnections[0].friend.custom_nickname || acceptedConnections[0].nickname || null;
         return {
-          ...conns[0].friend,
-          display_name: customNick || conns[0].friend.display_name,
-          raw_display_name: conns[0].friend.display_name,
+          ...acceptedConnections[0].friend,
+          display_name: customNick || acceptedConnections[0].friend.display_name,
+          raw_display_name: acceptedConnections[0].friend.display_name,
           custom_nickname: customNick,
-          relationship_type: conns[0].relationship_type || 'friend'
+          relationship_type: acceptedConnections[0].relationship_type || 'friend'
         };
       }
     }
@@ -410,6 +413,19 @@ class App {
     this.render();
     this.modals.openProfileModal(this.currentUser, this.connections, this.meals);
     this.showToast('Đã hủy ghép đôi.');
+  }
+
+  async handleConnectionRequest(requesterId, approve) {
+    const result = await api.respondToConnectionRequest(requesterId, approve);
+    if (!result.success) {
+      alert(result.message || 'Không thể xử lý lời mời.');
+      return;
+    }
+    const uid = this.currentUser?.id || this.session?.user?.id;
+    if (uid) this.connections = await profileService.getConnections(uid);
+    this.render();
+    this.modals.openProfileModal(this.currentUser, this.connections, this.meals);
+    this.showToast(approve ? 'Đã chấp nhận lời mời kết nối.' : 'Đã từ chối lời mời.');
   }
 
   async handleDeleteAccount() {
@@ -546,11 +562,6 @@ class App {
       this.render();
       this.showToast("Đã gửi món ngon lên Locket! 💕");
 
-      // Automated chat notification
-      await this.handleChatMessage({
-        text: `Vừa gửi đĩa ăn mới: ${dishName} 🍱`,
-        photoUrl: newMeal.photo_url
-      });
     } catch (err) {
       console.error("Publish error:", err);
       this.meals = this.meals.filter(m => m.id !== tempId);

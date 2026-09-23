@@ -5,7 +5,7 @@
  * ==============================================================================
  */
 
-import { api } from './api.js';
+import { api } from './api.js?v=2026092302';
 import { INITIAL_PROFILES } from '../constants/mockData.js';
 
 const ACTIVE_USER_KEY = 'ourmam_current_user';

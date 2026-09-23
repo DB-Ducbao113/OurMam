@@ -6,6 +6,8 @@ The web UI requires the database migration and account deletion Edge Function be
 
 Run `migrations/202609230001_task1_account_and_couple_constraints.sql` in the Supabase SQL Editor. It adds a transaction-safe rule limiting each account to one accepted couple partner and an authenticated RPC for ending a couple connection.
 
+Run `migrations/202609230002_task2_connection_approval.sql` as well. It changes code-based connections into pending requests and allows only the addressed account to accept or reject them. Apply both migrations before the matching frontend deployment is used.
+
 The migration stops if existing accepted couple rows already give one account multiple partners. Resolve those rows in `public.connections`, then run the migration again. It does not delete or rewrite existing relationships automatically.
 
 ## Deploy the account deletion function

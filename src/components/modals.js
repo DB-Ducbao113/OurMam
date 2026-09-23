@@ -10,7 +10,7 @@ import { getUserAvatar } from '../utils/avatarHelper.js';
 import { SCRIPTABLE_WIDGET_CODE } from '../utils/scriptableWidgetCode.js';
 
 export class ModalsComponent {
-  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal, onRemoveCouple, onDeleteAccount) {
+  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal, onRemoveCouple, onDeleteAccount, onRespondConnectionRequest) {
     // Profile & Settings Modal
     this.profileModal = document.getElementById('profile-modal');
     this.btnCloseProfileModal = document.getElementById('btn-close-profile-modal');
@@ -35,6 +35,7 @@ export class ModalsComponent {
     this.onDeleteMeal = onDeleteMeal;
     this.onRemoveCouple = onRemoveCouple;
     this.onDeleteAccount = onDeleteAccount;
+    this.onRespondConnectionRequest = onRespondConnectionRequest;
 
     this.currentPhotoMeal = null;
     this.selectedRelType = 'couple'; // default couple
@@ -397,8 +398,9 @@ export class ModalsComponent {
     const totalMeals = meals?.length || 0;
 
     // Determine partner connection
-    const coupleConn = connections.find(c => c.relationship_type === 'couple');
-    const friendConn = connections.find(c => c.relationship_type === 'friend');
+    const acceptedConnections = connections.filter(c => !c.status || c.status === 'accepted');
+    const coupleConn = acceptedConnections.find(c => c.relationship_type === 'couple');
+    const friendConn = acceptedConnections.find(c => c.relationship_type === 'friend');
     const primaryConn = coupleConn || friendConn;
     const isConnected = !!primaryConn;
     const partner = primaryConn?.friend || {};
@@ -580,16 +582,17 @@ export class ModalsComponent {
           <div class="pt-2 border-t border-orange-200/40">
             <p class="text-[11px] font-bold text-stone-700 mb-2 flex items-center gap-1">
               <span class="material-symbols-outlined text-xs text-[#FF6433]">favorite</span>
-              <span>Đã kết nối (${connections.length})</span>
+              <span>Kết nối & lời mời (${connections.length})</span>
             </p>
             <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               ${connections.map(c => {
                 const f = c.friend || {};
+                const isPending = c.status === 'pending';
                 const isC = c.relationship_type === 'couple';
                 const cName = f.display_name || (isC ? 'Người yêu' : 'Bạn bè');
                 const cAvatar = getUserAvatar(f.avatar_url, cName);
                 return `
-                  <div class="flex items-center justify-between p-2.5 rounded-xl ${isC ? 'bg-rose-50/70 border border-rose-200/70' : 'bg-white border border-stone-200/70'}">
+                  <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl ${isPending ? 'bg-amber-50 border border-amber-200' : (isC ? 'bg-rose-50/70 border border-rose-200/70' : 'bg-white border border-stone-200/70')}">
                     <div class="flex items-center gap-2.5 min-w-0">
                       <img class="w-8 h-8 rounded-full object-cover ring-1 ${isC ? 'ring-rose-400' : 'ring-emerald-400'}" src="${cAvatar}" alt="${cName}">
                       <div class="min-w-0">
@@ -597,10 +600,16 @@ export class ModalsComponent {
                         <p class="text-[10px] text-stone-500 font-medium">🔥 ${f.streak_count || 1} ngày cùng nhau</p>
                       </div>
                     </div>
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${isC ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
-                      ${isC ? '💕 Người yêu' : '🥑 Bạn bè'}
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${isPending ? 'bg-amber-200 text-amber-900' : (isC ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-800')}">
+                      ${isPending ? 'Đang chờ bạn đồng ý' : (isC ? '💕 Người yêu' : '🥑 Bạn bè')}
                     </span>
-                    ${isC ? `
+                    ${isPending ? `
+                      <div class="flex gap-1 shrink-0">
+                        <button type="button" data-approve-connection="${f.id}" class="px-2 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold">Đồng ý</button>
+                        <button type="button" data-decline-connection="${f.id}" class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-stone-600 text-[10px] font-bold">Từ chối</button>
+                      </div>
+                    ` : ''}
+                    ${isC && !isPending ? `
                       <button type="button" data-remove-couple="${f.id}" class="ml-2 shrink-0 px-2 py-1 rounded-lg border border-rose-200 bg-white text-rose-600 text-[10px] font-bold hover:bg-rose-100">
                         Hủy ghép đôi
                       </button>
@@ -967,6 +976,16 @@ export class ModalsComponent {
           button.disabled = false;
           button.textContent = 'Hủy ghép đôi';
         }
+      });
+    });
+
+    this.profilesContainer.querySelectorAll('[data-approve-connection], [data-decline-connection]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const approve = button.hasAttribute('data-approve-connection');
+        const requesterId = button.dataset.approveConnection || button.dataset.declineConnection;
+        button.disabled = true;
+        button.textContent = approve ? 'Đang đồng ý…' : 'Đang từ chối…';
+        await this.onRespondConnectionRequest?.(requesterId, approve);
       });
     });
 
