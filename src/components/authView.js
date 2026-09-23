@@ -372,8 +372,16 @@ export class AuthViewComponent {
             if (error) throw error;
 
             soundHelper.playPop();
-            const user = data?.user || { id: "user-" + Date.now() };
-            this.onAuthSuccess(user, username);
+            
+            if (errorEl) {
+              errorEl.className = 'mb-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-xl font-medium flex items-center justify-between';
+              errorEl.innerHTML = `<span>Đăng ký thành công! Hãy đăng nhập ngay.</span><button type="button" class="text-emerald-700 font-bold hover:underline" onclick="document.getElementById('btn-toggle-auth-mode').click()">Đăng nhập</button>`;
+              errorEl.classList.remove('hidden');
+            }
+            this.isSignUp = false;
+            if (btnSubmit) btnSubmit.disabled = false;
+            if (btnText) btnText.textContent = 'Đăng nhập';
+            return;
           } else {
             // Sign In
             const { data, error } = await api.signIn(username, password);

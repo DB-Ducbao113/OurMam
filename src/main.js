@@ -74,6 +74,8 @@ class App {
           return;
         }
 
+        api.session = session;
+
         // 2. Direct validation with Supabase Profiles table (with auto-ensure fallback)
         let profile = await profileService.fetchProfile(session.user.id);
         if (!profile) {
@@ -148,6 +150,11 @@ class App {
       localStorage.setItem('ourmam_auth', 'true');
 
       if (user && user.id) {
+        if (api.client) {
+          const session = await api.getSession();
+          if (session) api.session = session;
+        }
+
         await this.loadUserData(user.id);
         
         if (!this.currentUser) {
@@ -182,6 +189,7 @@ class App {
       api.client.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           this.showLoader();
+          api.session = session;
           let profile = await profileService.fetchProfile(session.user.id);
           if (!profile) {
             profile = await profileService.ensureProfile(session.user);

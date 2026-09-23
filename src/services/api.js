@@ -246,22 +246,17 @@ class ApiService {
   async signInWithGoogle() {
     if (!this.client) return { error: new Error("Supabase client chưa khởi tạo") };
     
-    // CRITICAL FIX: Ensure trailing slash on GitHub pages to prevent 301 redirect from dropping the OAuth hash!
-    let redirectUrl = window.location.origin + window.location.pathname;
-    if (!redirectUrl.endsWith('/')) {
-      redirectUrl += '/';
-    }
-    
     const { data, error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: window.location.origin + window.location.pathname,
         queryParams: {
           access_type: 'offline',
-          prompt: 'consent'
+          prompt: 'consent',
         }
       }
     });
+
     return { data, error };
   }
 
