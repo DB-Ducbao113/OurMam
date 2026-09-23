@@ -186,32 +186,45 @@ class App {
 
     // Listen to Supabase auth state change (e.g. Google OAuth redirect return or signout)
     if (api.client) {
-      api.client.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          this.showLoader();
-          api.session = session;
-          let profile = await profileService.fetchProfile(session.user.id);
-          if (!profile) {
-            profile = await profileService.ensureProfile(session.user);
-          }
-          if (profile) {
-            this.session = session;
-            this.currentUser = profile;
-            localStorage.setItem('ourmam_auth', 'true');
-            await this.loadUserData(session.user.id);
-            this.hideLoader();
-            this.authView.hide();
-            this.render();
-            this.cleanOAuthUrl();
-          } else {
-            await this.handleLogout(false);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          this.session = null;
-          this.currentUser = null;
-          if (this.authView) this.authView.show();
-        }
+      // Supabase invokes this callback while holding its auth lock. Defer all
+      // async work so calls such as getSession() in loadUserData can complete.
+      api.client.auth.onAuthStateChange((event, session) => {
+        setTimeout(() => this.handleAuthStateChange(event, session), 0);
       });
+    }
+  }
+
+  async handleAuthStateChange(event, session) {
+    if (event === 'SIGNED_IN' && session?.user) {
+      this.showLoader();
+      api.session = session;
+      try {
+        let profile = await profileService.fetchProfile(session.user.id);
+        if (!profile) {
+          profile = await profileService.ensureProfile(session.user);
+        }
+        if (!profile) {
+          await this.handleLogout(false);
+          return;
+        }
+
+        this.session = session;
+        this.currentUser = profile;
+        localStorage.setItem('ourmam_auth', 'true');
+        await this.loadUserData(session.user.id);
+        this.hideLoader();
+        this.authView.hide();
+        this.render();
+        this.cleanOAuthUrl();
+      } catch (err) {
+        console.error('Auth state handling error:', err);
+        this.hideLoader();
+        this.authView.show();
+      }
+    } else if (event === 'SIGNED_OUT') {
+      this.session = null;
+      this.currentUser = null;
+      if (this.authView) this.authView.show();
     }
   }
 
