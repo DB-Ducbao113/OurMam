@@ -28,26 +28,7 @@ export class CameraViewComponent {
     this.sectionTitle = document.getElementById('camera-section-title');
 
     this.cameraHelper = new CameraHelper(this.videoEl);
-    
-    // Auto-select meal tag based on current time
-    const hour = new Date().getHours();
-    let defaultTag = 'lunch';
-    if (hour <= 10) defaultTag = 'breakfast';
-    else if (hour > 10 && hour <= 14) defaultTag = 'lunch';
-    else defaultTag = 'dinner';
-    this.selectedTag = defaultTag;
-    
-    // Initialize tag buttons state
-    this.tagButtons.forEach(btn => {
-      if (btn.dataset.tag === defaultTag) {
-        btn.classList.add('active', 'bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-bold');
-        btn.classList.remove('text-tertiary');
-      } else {
-        btn.classList.remove('active', 'bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-bold');
-        btn.classList.add('text-tertiary');
-      }
-    });
-
+    this.selectedTag = 'lunch';
     this.capturedDataUrl = null;
     this.onPublishMeal = onPublishMeal;
 

@@ -52,14 +52,6 @@ class ProfileService {
     return await api.addConnection(targetCode, relationshipType);
   }
 
-  async getPendingRequests() {
-    return await api.getPendingRequests();
-  }
-
-  async respondToRequest(connectionId, isAccepted, requesterId, relationshipType) {
-    return await api.respondToRequest(connectionId, isAccepted, requesterId, relationshipType);
-  }
-
   async updateStatus(userId, statusText) {
     const updated = await api.updateProfile(userId, { status_text: statusText });
     if (updated) this.setCurrentUser(updated);

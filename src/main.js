@@ -14,7 +14,7 @@ import { CameraViewComponent } from './components/cameraView.js?v=2026092107';
 import { CalendarViewComponent } from './components/calendarView.js?v=2026091999';
 import { ChatViewComponent } from './components/chatView.js?v=2026092102';
 import { NavigationComponent } from './components/navigation.js?v=2026091999';
-import { ModalsComponent } from './components/modals.js?v=2026092104';
+import { ModalsComponent } from './components/modals.js?v=2026092103';
 import { AuthViewComponent } from './components/authView.js?v=2026092100';
 import { soundHelper } from './utils/soundHelper.js?v=2026091999';
 import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
@@ -46,23 +46,6 @@ class App {
     }
   }
 
-  showLoader() {
-    const loader = document.getElementById('initial-loader');
-    if (loader) {
-      loader.classList.remove('hidden');
-      loader.classList.add('flex');
-      loader.style.opacity = '1';
-    }
-  }
-
-  hideLoader() {
-    const loader = document.getElementById('initial-loader');
-    if (loader) {
-      loader.classList.add('hidden');
-      loader.classList.remove('flex');
-    }
-  }
-
   async start() {
     try {
       if (api.client) {
@@ -73,8 +56,6 @@ class App {
           await this.handleLogout(false);
           return;
         }
-
-        api.session = session;
 
         // 2. Direct validation with Supabase Profiles table (with auto-ensure fallback)
         let profile = await profileService.fetchProfile(session.user.id);
@@ -92,7 +73,6 @@ class App {
         this.session = session;
         this.currentUser = profile;
         await this.loadUserData(session.user.id);
-        this.hideLoader();
         this.authView.hide();
         this.render();
         return;
@@ -103,22 +83,18 @@ class App {
       if (isLocalAuth) {
         this.currentUser = profileService.getCurrentUser();
         if (this.currentUser) {
-          this.hideLoader();
           this.authView.hide();
           this.meals = await mealService.getMeals();
           this.messages = await chatService.getMessages();
           this.render();
         } else {
-          this.hideLoader();
           this.authView.show();
         }
       } else {
-        this.hideLoader();
         this.authView.show();
       }
     } catch (err) {
       console.error("App start error:", err);
-      this.hideLoader();
       await this.handleLogout(false);
     }
   }
@@ -134,14 +110,9 @@ class App {
     this.connections = await profileService.getConnections(userId);
     this.renderPartnerFeed();
 
-    // 3. Fetch Meals, Messages, & Pending Requests
+    // 3. Fetch Meals & Chat
     this.meals = await mealService.getMeals();
     this.messages = await chatService.getMessages();
-    this.pendingRequests = await profileService.getPendingRequests();
-    if (this.modals && this.modals.setPendingRequests) {
-      this.modals.setPendingRequests(this.pendingRequests);
-    }
-    
     this.renderPartnerFeed();
   }
 
@@ -150,33 +121,13 @@ class App {
       localStorage.setItem('ourmam_auth', 'true');
 
       if (user && user.id) {
-        if (api.client) {
-          const session = await api.getSession();
-          if (session) api.session = session;
-        }
-
         await this.loadUserData(user.id);
-        
-        if (!this.currentUser) {
-          this.currentUser = await profileService.ensureProfile(user);
-          if (this.currentUser) {
-            this.connections = await profileService.getConnections(user.id);
-            this.meals = await mealService.getMeals();
-            this.messages = await chatService.getMessages();
-            this.pendingRequests = await profileService.getPendingRequests();
-            if (this.modals && this.modals.setPendingRequests) {
-              this.modals.setPendingRequests(this.pendingRequests);
-            }
-          }
-        }
-
         if (customDisplayName && this.currentUser) {
           this.currentUser.display_name = customDisplayName;
           await profileService.updateDisplayName(user.id, customDisplayName);
         }
       }
 
-      this.hideLoader();
       this.authView.hide();
       this.render();
       if (this.currentUser) {
@@ -186,45 +137,29 @@ class App {
 
     // Listen to Supabase auth state change (e.g. Google OAuth redirect return or signout)
     if (api.client) {
-      // Supabase invokes this callback while holding its auth lock. Defer all
-      // async work so calls such as getSession() in loadUserData can complete.
-      api.client.auth.onAuthStateChange((event, session) => {
-        setTimeout(() => this.handleAuthStateChange(event, session), 0);
+      api.client.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          let profile = await profileService.fetchProfile(session.user.id);
+          if (!profile) {
+            profile = await profileService.ensureProfile(session.user);
+          }
+          if (profile) {
+            this.session = session;
+            this.currentUser = profile;
+            localStorage.setItem('ourmam_auth', 'true');
+            await this.loadUserData(session.user.id);
+            this.authView.hide();
+            this.render();
+            this.cleanOAuthUrl();
+          } else {
+            await this.handleLogout(false);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          this.session = null;
+          this.currentUser = null;
+          if (this.authView) this.authView.show();
+        }
       });
-    }
-  }
-
-  async handleAuthStateChange(event, session) {
-    if (event === 'SIGNED_IN' && session?.user) {
-      this.showLoader();
-      api.session = session;
-      try {
-        let profile = await profileService.fetchProfile(session.user.id);
-        if (!profile) {
-          profile = await profileService.ensureProfile(session.user);
-        }
-        if (!profile) {
-          await this.handleLogout(false);
-          return;
-        }
-
-        this.session = session;
-        this.currentUser = profile;
-        localStorage.setItem('ourmam_auth', 'true');
-        await this.loadUserData(session.user.id);
-        this.hideLoader();
-        this.authView.hide();
-        this.render();
-        this.cleanOAuthUrl();
-      } catch (err) {
-        console.error('Auth state handling error:', err);
-        this.hideLoader();
-        this.authView.show();
-      }
-    } else if (event === 'SIGNED_OUT') {
-      this.session = null;
-      this.currentUser = null;
-      if (this.authView) this.authView.show();
     }
   }
 
@@ -237,8 +172,7 @@ class App {
       (newName) => this.handleUpdateProfile(newName),
       (file) => this.handleUpdateAvatar(file),
       (newPassword) => this.handleUpdatePassword(newPassword),
-      (mealId) => this.handleDeleteMeal(mealId),
-      (connectionId, isAccepted, reqId, relType) => this.handleRespondRequest(connectionId, isAccepted, reqId, relType)
+      (mealId) => this.handleDeleteMeal(mealId)
     );
 
     // 2. Header
@@ -721,24 +655,6 @@ class App {
       this.authView.show();
     } finally {
       this._isLoggingOut = false;
-    }
-  }
-
-  async handleRespondRequest(connectionId, isAccepted, reqId, relType) {
-    if (!this.currentUser) return;
-    this.showLoader();
-    try {
-      const ok = await profileService.respondToRequest(connectionId, isAccepted, reqId, relType);
-      if (ok) {
-        this.showToast(isAccepted ? 'Đã chấp nhận ghép đôi! 💕' : 'Đã từ chối lời mời');
-        await this.loadUserData(this.currentUser.id);
-      } else {
-        this.showToast('Lỗi khi phản hồi yêu cầu!');
-      }
-    } catch (e) {
-      this.showToast('Lỗi khi phản hồi yêu cầu!');
-    } finally {
-      this.hideLoader();
     }
   }
 

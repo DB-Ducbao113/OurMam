@@ -139,11 +139,21 @@ export class LocketFeedComponent {
     // Sort by created_at descending (latest first)
     pool.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
+    // 1. Filter meals created today
+    const todayMeals = pool.filter(m => {
+      if (!m.created_at) return false;
+      return new Date(m.created_at).toDateString() === todayStr;
+    });
+
     let displayMeals = [];
     let isLatestFallback = false;
 
-    if (pool.length > 0) {
+    if (todayMeals.length > 0) {
+      displayMeals = todayMeals;
+    } else if (pool.length > 0) {
+      // Fallback: show the single most recent meal
       displayMeals = [pool[0]];
+      isLatestFallback = true;
     }
 
     // CASE 1: EMPTY LIST (No meals at all for this filter)
@@ -367,21 +377,11 @@ export class LocketFeedComponent {
       <!-- Card Action Footer: Quick Heart Reaction & Reply -->
       ${meal.isUploading ? '' : 
       (!isMe ? `
-      <div class="flex items-center gap-2 pt-0.5 relative z-20">
-        <!-- Reaction Trigger & Picker -->
-        <div class="relative reaction-container flex items-center">
-          <button type="button" class="btn-reaction-trigger p-2 rounded-full bg-surface-container-low hover:bg-stone-200 text-stone-600 active:scale-90 transition-all flex items-center justify-center border border-outline-variant/30" title="Thả cảm xúc">
-            <span class="material-symbols-outlined text-xl">add_reaction</span>
-          </button>
-          
-          <div class="reaction-picker absolute bottom-full left-0 mb-2 hidden bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-stone-200 p-1.5 flex items-center gap-1 animate-fade-in origin-bottom-left">
-            ${['❤️', '😂', '🔥', '🤤', '🥑'].map(emoji => `
-              <button type="button" class="btn-card-react p-1.5 hover:scale-125 transition-transform cursor-pointer" data-emoji="${emoji}">
-                <span class="text-xl leading-none drop-shadow-sm">${emoji}</span>
-              </button>
-            `).join('')}
-          </div>
-        </div>
+      <div class="flex items-center gap-2 pt-0.5">
+        <!-- Quick Heart Reaction Button -->
+        <button type="button" class="btn-card-heart p-2 rounded-full bg-surface-container-low hover:bg-rose-50 text-rose-500 active:scale-90 transition-all flex items-center justify-center border border-outline-variant/30" title="Thả tim cho ảnh này">
+          <span class="material-symbols-outlined text-xl filled text-rose-500">favorite</span>
+        </button>
 
         <!-- Quick Reply Form -->
         <form class="form-card-reply flex-1 flex items-center gap-1.5 bg-surface-container-low rounded-full px-3 py-1.5 border border-outline-variant/30 focus-within:border-primary focus-within:bg-white transition-all">
@@ -476,39 +476,22 @@ export class LocketFeedComponent {
       }
     }
 
-    // Bind Reaction Trigger
-    const triggerBtn = card.querySelector('.btn-reaction-trigger');
-    const reactionPicker = card.querySelector('.reaction-picker');
-    if (triggerBtn && reactionPicker) {
-      triggerBtn.addEventListener('click', (e) => {
+    // Bind Heart Button Click -> Send Heart
+    const heartBtn = card.querySelector('.btn-card-heart');
+    if (heartBtn) {
+      heartBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         soundHelper.playPop();
-        // Toggle picker
-        document.querySelectorAll('.reaction-picker').forEach(p => {
-          if (p !== reactionPicker) p.classList.add('hidden');
-        });
-        reactionPicker.classList.toggle('hidden');
-      });
 
-      // Bind individual emoji buttons
-      const reactBtns = reactionPicker.querySelectorAll('.btn-card-react');
-      reactBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          soundHelper.playPop();
-          reactionPicker.classList.add('hidden');
-          const emoji = btn.dataset.emoji;
-          if (this.onSendReaction) {
-            this.onSendReaction(meal, emoji, 'Cảm xúc');
-          }
-        });
+        // Little bounce animation
+        heartBtn.classList.add('scale-125', 'bg-rose-100');
+        setTimeout(() => heartBtn.classList.remove('scale-125', 'bg-rose-100'), 300);
+
+        if (this.onSendReaction) {
+          this.onSendReaction(meal, '❤️', 'Yêu thích');
+        }
       });
     }
-
-    // Close reaction pickers on document click
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
-    });
 
     // Bind Quick Reply Form
     const replyForm = card.querySelector('.form-card-reply');

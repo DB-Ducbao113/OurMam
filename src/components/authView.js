@@ -372,16 +372,8 @@ export class AuthViewComponent {
             if (error) throw error;
 
             soundHelper.playPop();
-            
-            if (errorEl) {
-              errorEl.className = 'mb-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-xl font-medium flex items-center justify-between';
-              errorEl.innerHTML = `<span>Đăng ký thành công! Hãy đăng nhập ngay.</span><button type="button" class="text-emerald-700 font-bold hover:underline" onclick="document.getElementById('btn-toggle-auth-mode').click()">Đăng nhập</button>`;
-              errorEl.classList.remove('hidden');
-            }
-            this.isSignUp = false;
-            if (btnSubmit) btnSubmit.disabled = false;
-            if (btnText) btnText.textContent = 'Đăng nhập';
-            return;
+            const user = data?.user || { id: "user-" + Date.now() };
+            this.onAuthSuccess(user, username);
           } else {
             // Sign In
             const { data, error } = await api.signIn(username, password);
@@ -420,21 +412,16 @@ export class AuthViewComponent {
     if (btnGoogle) {
       btnGoogle.addEventListener('click', async () => {
         soundHelper.playPop();
-        const origContent = btnGoogle.innerHTML;
-        btnGoogle.innerHTML = '<span class="material-symbols-outlined animate-spin text-[#FF6433]">progress_activity</span><span>Đang chuyển hướng...</span>';
-        btnGoogle.disabled = true;
         try {
           const { error } = await api.signInWithGoogle();
           if (error) throw error;
         } catch (err) {
-          console.error('Google Auth Error:', err);
+          console.error("Google auth error:", err);
           const errorEl = document.getElementById('auth-error-msg');
           if (errorEl) {
             errorEl.textContent = err.message || "Không thể kết nối Google Auth. Vui lòng thử lại!";
             errorEl.classList.remove('hidden');
           }
-          btnGoogle.innerHTML = origContent;
-          btnGoogle.disabled = false;
         }
       });
     }

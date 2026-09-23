@@ -33,54 +33,16 @@ export class ModalsComponent {
     this.onUpdateAvatar = onUpdateAvatar;
     this.onUpdatePassword = onUpdatePassword;
     this.onDeleteMeal = onDeleteMeal;
-    this.onRespondRequest = onRespondRequest;
 
-    this.currentUser = null;
-    this.connections = [];
-    this.pendingRequests = [];
     this.currentPhotoMeal = null;
     this.selectedRelType = 'couple'; // default couple
     this.isEditingProfile = false;
-    this.isUploadingAvatar = false;
     this.isChangePwdOpen = false;
-    this._onSaveNicknameCallback = null;
 
     this.bindEvents();
   }
 
-  setPendingRequests(requests) {
-    this.pendingRequests = requests || [];
-    // If the modal is already open, we should re-render it
-    const modalProfile = document.getElementById('profile-modal');
-    if (modalProfile && !modalProfile.classList.contains('hidden') && this.currentUser) {
-      this.openProfileModal(this.currentUser, this.connections);
-    }
-  }
-
   bindEvents() {
-    // Document click to handle dynamic elements
-    document.addEventListener('click', (e) => {
-      // Pending request accept
-      const acceptBtn = e.target.closest('.btn-accept-req');
-      if (acceptBtn) {
-        soundHelper.playPop();
-        const connId = acceptBtn.dataset.id;
-        const reqId = acceptBtn.dataset.reqid;
-        const type = acceptBtn.dataset.type;
-        if (this.onRespondRequest) this.onRespondRequest(connId, true, reqId, type);
-      }
-
-      // Pending request reject
-      const rejectBtn = e.target.closest('.btn-reject-req');
-      if (rejectBtn) {
-        soundHelper.playPop();
-        const connId = rejectBtn.dataset.id;
-        const reqId = rejectBtn.dataset.reqid;
-        const type = rejectBtn.dataset.type;
-        if (this.onRespondRequest) this.onRespondRequest(connId, false, reqId, type);
-      }
-    });
-
     if (this.btnCloseProfileModal) {
       this.btnCloseProfileModal.addEventListener('click', () => this.closeProfileModal());
     }
@@ -610,33 +572,6 @@ export class ModalsComponent {
             </button>
           </div>
         </div>
-
-        <!-- Pending Requests -->
-        ${this.pendingRequests && this.pendingRequests.length > 0 ? `
-          <div class="pt-2 border-t border-orange-200/40">
-            <p class="text-[11px] font-bold text-rose-600 mb-2 flex items-center gap-1">
-              <span class="material-symbols-outlined text-xs">mail</span>
-              <span>Lời mời kết nối mới (${this.pendingRequests.length})</span>
-            </p>
-            <div class="space-y-2">
-              ${this.pendingRequests.map(req => `
-                <div class="flex items-center justify-between p-2 rounded-xl bg-orange-50/50 border border-orange-200">
-                  <div class="min-w-0 pr-2">
-                    <p class="text-xs font-bold text-stone-900 truncate">${req.requester.display_name} <span class="font-normal text-stone-500">muốn trở thành</span> ${req.relationship_type === 'couple' ? '💕 Người yêu' : '🥑 Bạn bè'} <span class="font-normal text-stone-500">với bạn.</span></p>
-                  </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" class="btn-reject-req w-7 h-7 rounded-lg bg-stone-200 text-stone-600 hover:bg-stone-300 flex items-center justify-center active:scale-90 transition-all cursor-pointer" data-id="${req.connection_id}" data-reqid="${req.requester.id}" data-type="${req.relationship_type}" title="Từ chối">
-                      <span class="material-symbols-outlined text-sm">close</span>
-                    </button>
-                    <button type="button" class="btn-accept-req w-7 h-7 rounded-lg bg-[#FF6433] text-white hover:bg-[#eb5828] flex items-center justify-center active:scale-90 transition-all cursor-pointer shadow-sm" data-id="${req.connection_id}" data-reqid="${req.requester.id}" data-type="${req.relationship_type}" title="Đồng ý">
-                      <span class="material-symbols-outlined text-sm">check</span>
-                    </button>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
 
         <!-- Connected Circle Stream (If Multiple Connections) -->
         ${connections.length > 0 ? `

@@ -246,17 +246,19 @@ class ApiService {
   async signInWithGoogle() {
     if (!this.client) return { error: new Error("Supabase client chưa khởi tạo") };
     
+    // Redirect cleanly to current origin and path
+    const redirectUrl = window.location.origin + window.location.pathname;
+    
     const { data, error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + window.location.pathname,
+        redirectTo: redirectUrl,
         queryParams: {
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: 'consent'
         }
       }
     });
-
     return { data, error };
   }
 
@@ -411,85 +413,10 @@ class ApiService {
       known[targetUser.id] = targetUser;
       this.setLocal('ourmam_known_profiles', known);
 
-      // 2. Direct insert or update connection A -> B as 'pending'
+      // 2. Direct insert or update connection A -> B
       const existingAB = await this.dbQuery(`connections?user_id=eq.${sessionUser.id}&friend_id=eq.${targetUser.id}&select=id`);
       if (existingAB && existingAB.length > 0) {
         await this.dbQuery(`connections?id=eq.${existingAB[0].id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ relationship_type: relationshipType, status: 'pending' })
-        });
-      } else {
-        await this.dbQuery('connections', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_id: sessionUser.id,
-            friend_id: targetUser.id,
-            relationship_type: relationshipType,
-            status: 'pending'
-          })
-        });
-      }
-
-      return {
-        success: true,
-        friend_id: targetUser.id,
-        friend_name: targetUser.display_name,
-        relationship_type: relationshipType,
-        message: `Đã gửi yêu cầu ghép đôi tới ${targetUser.display_name}. Vui lòng chờ xác nhận!`
-      };
-    } catch (err) {
-      console.error("addConnection error:", err);
-      return { success: false, message: "Lỗi kết nối mạng hoặc server." };
-    }
-  }
-
-  async getPendingRequests() {
-    try {
-      const session = await this.getSession();
-      const sessionUser = session?.user;
-      if (!sessionUser) return [];
-
-      const reqs = await this.dbQuery(`connections?friend_id=eq.${sessionUser.id}&status=eq.pending&select=id,user_id,relationship_type,created_at`);
-      if (!reqs || reqs.length === 0) return [];
-      
-      const userIds = [...new Set(reqs.map(r => r.user_id))];
-      const profiles = await this.dbQuery(`profiles?id=in.(${userIds.join(',')})&select=*`);
-      const profileMap = new Map();
-      if (profiles) profiles.forEach(p => profileMap.set(p.id, p));
-
-      return reqs.map(r => ({
-        connection_id: r.id,
-        requester: profileMap.get(r.user_id) || { id: r.user_id, display_name: 'Ai đó' },
-        relationship_type: r.relationship_type,
-        created_at: r.created_at
-      }));
-    } catch (err) {
-      console.warn("getPendingRequests error:", err);
-      return [];
-    }
-  }
-
-  async respondToRequest(connectionId, isAccepted, requesterId, relationshipType = 'friend') {
-    try {
-      const session = await this.getSession();
-      const sessionUser = session?.user;
-      if (!sessionUser) return false;
-
-      if (!isAccepted) {
-        await this.dbQuery(`connections?id=eq.${connectionId}`, { method: 'DELETE' });
-        return true;
-      }
-
-      // Mark A -> B as accepted
-      await this.dbQuery(`connections?id=eq.${connectionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'accepted' })
-      });
-
-      // Create B -> A as accepted
-      const existingBA = await this.dbQuery(`connections?user_id=eq.${sessionUser.id}&friend_id=eq.${requesterId}&select=id`);
-      if (existingBA && existingBA.length > 0) {
-        await this.dbQuery(`connections?id=eq.${existingBA[0].id}`, {
           method: 'PATCH',
           body: JSON.stringify({ relationship_type: relationshipType, status: 'accepted' })
         });
@@ -498,16 +425,48 @@ class ApiService {
           method: 'POST',
           body: JSON.stringify({
             user_id: sessionUser.id,
-            friend_id: requesterId,
+            friend_id: targetUser.id,
             relationship_type: relationshipType,
             status: 'accepted'
           })
         });
       }
-      return true;
+
+      // 3. Insert or update reverse connection B -> A
+      try {
+        const existingBA = await this.dbQuery(`connections?user_id=eq.${targetUser.id}&friend_id=eq.${sessionUser.id}&select=id`);
+        if (existingBA && existingBA.length > 0) {
+          await this.dbQuery(`connections?id=eq.${existingBA[0].id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ relationship_type: relationshipType, status: 'accepted' })
+          });
+        } else {
+          await this.dbQuery('connections', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: targetUser.id,
+              friend_id: sessionUser.id,
+              relationship_type: relationshipType,
+              status: 'accepted'
+            })
+          });
+        }
+      } catch (revErr) {
+        console.warn("Reverse connection insert warning:", revErr);
+      }
+
+      return {
+        success: true,
+        friend_id: targetUser.id,
+        friend_name: targetUser.display_name,
+        relationship_type: relationshipType,
+        message: relationshipType === 'couple' 
+          ? `Đã kết nối cặp đôi với ${targetUser.display_name} thành công! 💕` 
+          : `Đã kết bạn với ${targetUser.display_name} thành công! 🥑`
+      };
     } catch (err) {
-      console.warn("respondToRequest error:", err);
-      return false;
+      console.error("addConnection error:", err);
+      return { success: false, message: 'Lỗi kết nối: ' + (err.message || 'Không thể tạo liên kết') };
     }
   }
 
