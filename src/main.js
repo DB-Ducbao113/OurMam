@@ -10,7 +10,7 @@ import { profileService } from './services/profileService.js?v=2026092302';
 import { chatService } from './services/chatService.js?v=2026091999';
 import { HeaderComponent } from './components/header.js?v=2026091999';
 import { LocketFeedComponent } from './components/locketFeed.js?v=2026092302';
-import { CameraViewComponent } from './components/cameraView.js?v=2026092107';
+import { CameraViewComponent } from './components/cameraView.js?v=2026092303';
 import { CalendarViewComponent } from './components/calendarView.js?v=2026092302';
 import { ChatViewComponent } from './components/chatView.js?v=2026092102';
 import { NavigationComponent } from './components/navigation.js?v=2026091999';
@@ -212,6 +212,7 @@ class App {
     );
 
     this.navigation = new NavigationComponent((tabId) => {
+      if (tabId === 'tab-camera') this.cameraView.selectDefaultTagForCurrentTime();
       if (tabId === 'tab-calendar') this.calendarView.setMeals(this.meals);
       if (tabId === 'tab-chat') {
         if (this.chatView.onTabOpened) {

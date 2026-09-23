@@ -28,7 +28,7 @@ export class CameraViewComponent {
     this.sectionTitle = document.getElementById('camera-section-title');
 
     this.cameraHelper = new CameraHelper(this.videoEl);
-    this.selectedTag = 'lunch';
+    this.selectedTag = this.getTimeBasedTag();
     this.capturedDataUrl = null;
     this.onPublishMeal = onPublishMeal;
 
@@ -113,15 +113,11 @@ export class CameraViewComponent {
   bindEvents() {
     this.tagButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        this.tagButtons.forEach(b => {
-          b.classList.remove('active', 'bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-bold');
-          b.classList.add('text-tertiary');
-        });
-        btn.classList.add('active', 'bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-bold');
-        btn.classList.remove('text-tertiary');
-        this.selectedTag = btn.dataset.tag;
+        this.selectTag(btn.dataset.tag);
       });
     });
+
+    this.selectTag(this.selectedTag);
 
     this.btnShutter.addEventListener('click', () => this.handleShutter());
     this.btnFlip.addEventListener('click', () => this.cameraHelper.flip().catch(() => {}));
@@ -174,6 +170,33 @@ export class CameraViewComponent {
       const dataUrl = await compressImageFile(file);
       this.setPreview(dataUrl);
     });
+  }
+
+  getTimeBasedTag(date = new Date()) {
+    const hour = date.getHours();
+    if (hour >= 7 && hour < 12) return 'breakfast';
+    if (hour >= 12 && hour < 16) return 'lunch';
+    if (hour >= 16 && hour < 22) return 'dinner';
+    return 'snack';
+  }
+
+  selectTag(tag) {
+    const validTags = new Set([...this.tagButtons].map(button => button.dataset.tag));
+    if (!validTags.has(tag)) return;
+    this.tagButtons.forEach(button => {
+      const isSelected = button.dataset.tag === tag;
+      button.classList.toggle('active', isSelected);
+      button.classList.toggle('bg-surface-container-lowest', isSelected);
+      button.classList.toggle('text-primary', isSelected);
+      button.classList.toggle('shadow-sm', isSelected);
+      button.classList.toggle('font-bold', isSelected);
+      button.classList.toggle('text-tertiary', !isSelected);
+    });
+    this.selectedTag = tag;
+  }
+
+  selectDefaultTagForCurrentTime() {
+    this.selectTag(this.getTimeBasedTag());
   }
 
   handleShutter() {
