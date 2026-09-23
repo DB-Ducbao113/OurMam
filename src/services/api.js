@@ -270,23 +270,62 @@ class ApiService {
         console.warn("Supabase signOut err:", err);
       }
     }
-    localStorage.removeItem('ourmam_auth');
-    localStorage.removeItem('ourmam_current_user');
-    localStorage.removeItem('ourmam_meals');
-    localStorage.removeItem('ourmam_messages');
-    localStorage.removeItem('ourmam_connections');
-    localStorage.removeItem('ourmam_known_profiles');
+    this.clearLocalSessionData();
+  }
+
+  clearLocalSessionData() {
+    [
+      'ourmam_auth',
+      'ourmam_current_user',
+      'ourmam_meals',
+      'ourmam_messages',
+      'ourmam_connections',
+      'ourmam_known_profiles'
+    ].forEach(key => localStorage.removeItem(key));
 
     try {
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('sb-') || k.includes('supabase.auth.token'))) {
-          keysToRemove.push(k);
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+          keysToRemove.push(key);
         }
       }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
-    } catch (e) {}
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    } catch (error) {}
+  }
+
+  async deleteCurrentAccount() {
+    if (!this.client) throw new Error('Không thể kết nối dịch vụ tài khoản.');
+
+    const { error } = await this.client.functions.invoke('delete-account', { method: 'POST' });
+    if (error) throw new Error('Không thể xóa tài khoản. Vui lòng thử lại sau.');
+
+    try {
+      await this.client.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.warn('Local sign-out after account deletion:', error);
+    }
+    this.clearLocalSessionData();
+    return true;
+  }
+
+  async removeCoupleConnection(partnerId) {
+    if (!this.client || !partnerId) {
+      return { success: false, message: 'Không thể xác định kết nối cần hủy.' };
+    }
+
+    const { data, error } = await this.client.rpc('remove_couple_connection', {
+      target_user_id: partnerId
+    });
+    if (error) {
+      console.error('removeCoupleConnection error:', error);
+      return { success: false, message: 'Không thể hủy ghép đôi. Vui lòng thử lại.' };
+    }
+    if (!data) {
+      return { success: false, message: 'Không tìm thấy kết nối người yêu đang hoạt động.' };
+    }
+    return { success: true };
   }
 
   // ==================== PROFILE METHODS ====================
@@ -466,6 +505,13 @@ class ApiService {
       };
     } catch (err) {
       console.error("addConnection error:", err);
+      const details = `${err.message || ''} ${err.details || ''}`.toLowerCase();
+      if (relationshipType === 'couple' && details.includes('one active couple partner')) {
+        return {
+          success: false,
+          message: 'Mỗi người chỉ có thể ghép đôi với một người yêu. Hãy hủy ghép đôi hiện tại trước.'
+        };
+      }
       return { success: false, message: 'Lỗi kết nối: ' + (err.message || 'Không thể tạo liên kết') };
     }
   }

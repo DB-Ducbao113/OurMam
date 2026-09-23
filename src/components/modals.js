@@ -10,7 +10,7 @@ import { getUserAvatar } from '../utils/avatarHelper.js';
 import { SCRIPTABLE_WIDGET_CODE } from '../utils/scriptableWidgetCode.js';
 
 export class ModalsComponent {
-  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal) {
+  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal, onRemoveCouple, onDeleteAccount) {
     // Profile & Settings Modal
     this.profileModal = document.getElementById('profile-modal');
     this.btnCloseProfileModal = document.getElementById('btn-close-profile-modal');
@@ -33,6 +33,8 @@ export class ModalsComponent {
     this.onUpdateAvatar = onUpdateAvatar;
     this.onUpdatePassword = onUpdatePassword;
     this.onDeleteMeal = onDeleteMeal;
+    this.onRemoveCouple = onRemoveCouple;
+    this.onDeleteAccount = onDeleteAccount;
 
     this.currentPhotoMeal = null;
     this.selectedRelType = 'couple'; // default couple
@@ -598,6 +600,11 @@ export class ModalsComponent {
                     <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${isC ? 'bg-rose-200 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
                       ${isC ? '💕 Người yêu' : '🥑 Bạn bè'}
                     </span>
+                    ${isC ? `
+                      <button type="button" data-remove-couple="${f.id}" class="ml-2 shrink-0 px-2 py-1 rounded-lg border border-rose-200 bg-white text-rose-600 text-[10px] font-bold hover:bg-rose-100">
+                        Hủy ghép đôi
+                      </button>
+                    ` : ''}
                   </div>
                 `;
               }).join('')}
@@ -792,6 +799,9 @@ export class ModalsComponent {
             <span class="material-symbols-outlined text-base text-[#FF6433]">logout</span>
             <span>Đăng xuất tài khoản</span>
           </button>
+          <button id="btn-delete-account" type="button" class="w-full mt-2 py-2.5 rounded-2xl bg-white hover:bg-red-50 text-red-600 text-xs font-bold transition-all border border-red-200">
+            Xóa tài khoản và dữ liệu
+          </button>
         </div>
       </section>
 
@@ -943,6 +953,38 @@ export class ModalsComponent {
         inputTarget.value = '';
         btnConnect.disabled = false;
         btnConnect.textContent = 'Kết nối';
+      });
+    }
+
+    this.profilesContainer.querySelectorAll('[data-remove-couple]').forEach(button => {
+      button.addEventListener('click', async () => {
+        if (!window.confirm('Hủy ghép đôi với người này?')) return;
+        button.disabled = true;
+        button.textContent = 'Đang hủy…';
+        try {
+          await this.onRemoveCouple?.(button.dataset.removeCouple);
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Hủy ghép đôi';
+        }
+      });
+    });
+
+    const btnDeleteAccount = this.profilesContainer.querySelector('#btn-delete-account');
+    if (btnDeleteAccount) {
+      btnDeleteAccount.addEventListener('click', async () => {
+        const confirmed = window.confirm(
+          'Xóa vĩnh viễn tài khoản, ảnh đã tải lên và dữ liệu gắn với tài khoản này? Thao tác này không thể hoàn tác.'
+        );
+        if (!confirmed) return;
+        btnDeleteAccount.disabled = true;
+        btnDeleteAccount.textContent = 'Đang xóa tài khoản…';
+        try {
+          await this.onDeleteAccount?.();
+        } finally {
+          btnDeleteAccount.disabled = false;
+          btnDeleteAccount.textContent = 'Xóa tài khoản và dữ liệu';
+        }
       });
     }
 

@@ -172,7 +172,9 @@ class App {
       (newName) => this.handleUpdateProfile(newName),
       (file) => this.handleUpdateAvatar(file),
       (newPassword) => this.handleUpdatePassword(newPassword),
-      (mealId) => this.handleDeleteMeal(mealId)
+      (mealId) => this.handleDeleteMeal(mealId),
+      (partnerId) => this.handleRemoveCouple(partnerId),
+      () => this.handleDeleteAccount()
     );
 
     // 2. Header
@@ -393,6 +395,37 @@ class App {
       this.modals.openProfileModal(this.currentUser, this.connections, this.meals);
     } else {
       alert(res.message || "Không thể kết nối. Vui lòng kiểm tra lại mã!");
+    }
+  }
+
+  async handleRemoveCouple(partnerId) {
+    const result = await profileService.removeCoupleConnection(partnerId);
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
+
+    const uid = this.currentUser?.id || this.session?.user?.id;
+    if (uid) this.connections = await profileService.getConnections(uid);
+    this.render();
+    this.modals.openProfileModal(this.currentUser, this.connections, this.meals);
+    this.showToast('Đã hủy ghép đôi.');
+  }
+
+  async handleDeleteAccount() {
+    try {
+      await api.deleteCurrentAccount();
+      this.session = null;
+      this.currentUser = null;
+      this.connections = [];
+      this.meals = [];
+      this.messages = [];
+      this.modals.closeProfileModal();
+      this.authView.show();
+      this.showToast('Tài khoản và dữ liệu của bạn đã được xóa.');
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      alert(error.message || 'Không thể xóa tài khoản. Vui lòng thử lại.');
     }
   }
 

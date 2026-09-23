@@ -52,6 +52,10 @@ class ProfileService {
     return await api.addConnection(targetCode, relationshipType);
   }
 
+  async removeCoupleConnection(partnerId) {
+    return await api.removeCoupleConnection(partnerId);
+  }
+
   async updateStatus(userId, statusText) {
     const updated = await api.updateProfile(userId, { status_text: statusText });
     if (updated) this.setCurrentUser(updated);
