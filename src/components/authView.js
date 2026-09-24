@@ -4,9 +4,8 @@
  * Design: Single Unified Hero Image Header + Extra Large Crisp Heart Avatar
  * ==============================================================================
  */
-
-import { api, extractUsername } from '../services/api.js';
-import { soundHelper } from '../utils/soundHelper.js';
+import { api, extractUsername } from '../services/api.js?v=2026092401';
+import { soundHelper } from '../utils/soundHelper.js?v=2026091999';
 
 export class AuthViewComponent {
   constructor(onAuthSuccess) {
