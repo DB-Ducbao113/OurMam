@@ -5,7 +5,7 @@
  * ==============================================================================
  */
 
-import { api } from './api.js';
+import { api } from './api.js?v=2026092401';
 import { INITIAL_MESSAGES } from '../constants/mockData.js';
 
 const CHAT_KEY = 'ourmam_messages';

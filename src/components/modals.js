@@ -10,7 +10,7 @@ import { getUserAvatar } from '../utils/avatarHelper.js';
 import { SCRIPTABLE_WIDGET_CODE } from '../utils/scriptableWidgetCode.js';
 
 export class ModalsComponent {
-  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal, onRemoveCouple, onDeleteAccount, onRespondConnectionRequest) {
+  constructor(onAddConnection, onUpdateStatus, onLogout, onUpdateProfile, onUpdateAvatar, onUpdatePassword, onDeleteMeal, onRemoveCouple, onDeleteAccount, onRespondConnectionRequest, onUpdateMeal) {
     // Profile & Settings Modal
     this.profileModal = document.getElementById('profile-modal');
     this.btnCloseProfileModal = document.getElementById('btn-close-profile-modal');
@@ -36,6 +36,8 @@ export class ModalsComponent {
     this.onRemoveCouple = onRemoveCouple;
     this.onDeleteAccount = onDeleteAccount;
     this.onRespondConnectionRequest = onRespondConnectionRequest;
+    this.onUpdateMeal = onUpdateMeal;
+    this.currentUser = null;
 
     this.currentPhotoMeal = null;
     this.selectedRelType = 'couple'; // default couple
@@ -122,6 +124,9 @@ export class ModalsComponent {
     const btnConfirmDelete = document.getElementById('btn-confirm-delete-modal');
     const btnDeletePhotoTop = document.getElementById('btn-delete-photo-modal');
     const btnDeletePhotoAction = document.getElementById('btn-delete-photo-action');
+    const btnEditPhoto = document.getElementById('btn-edit-photo');
+    const photoEditForm = document.getElementById('photo-edit-form');
+    const btnCancelPhotoEdit = document.getElementById('btn-cancel-photo-edit');
 
     const promptDeleteMeal = () => {
       if (!this.currentPhotoMeal) return;
@@ -134,6 +139,45 @@ export class ModalsComponent {
 
     if (btnDeletePhotoTop) btnDeletePhotoTop.addEventListener('click', promptDeleteMeal);
     if (btnDeletePhotoAction) btnDeletePhotoAction.addEventListener('click', promptDeleteMeal);
+
+    if (btnEditPhoto && photoEditForm) {
+      btnEditPhoto.addEventListener('click', () => {
+        photoEditForm.classList.remove('hidden');
+        btnEditPhoto.classList.add('hidden');
+      });
+    }
+    if (btnCancelPhotoEdit && photoEditForm && btnEditPhoto) {
+      btnCancelPhotoEdit.addEventListener('click', () => {
+        photoEditForm.classList.add('hidden');
+        btnEditPhoto.classList.remove('hidden');
+      });
+    }
+    if (photoEditForm) {
+      photoEditForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!this.currentPhotoMeal || !this.onUpdateMeal) return;
+        const saveButton = photoEditForm.querySelector('#btn-save-photo-edit');
+        const details = {
+          dish_name: photoEditForm.querySelector('#photo-edit-dish').value.trim(),
+          caption: photoEditForm.querySelector('#photo-edit-caption').value.trim(),
+          meal_type: photoEditForm.querySelector('#photo-edit-meal-type').value,
+          location: photoEditForm.querySelector('#photo-edit-location').value.trim(),
+          calories: photoEditForm.querySelector('#photo-edit-calories').value.trim()
+        };
+        saveButton.disabled = true;
+        saveButton.textContent = 'Đang lưu…';
+        try {
+          await this.onUpdateMeal(this.currentPhotoMeal, details);
+          photoEditForm.classList.add('hidden');
+          btnEditPhoto?.classList.remove('hidden');
+        } catch (error) {
+          alert(error.message || 'Không thể lưu thông tin ảnh.');
+        } finally {
+          saveButton.disabled = false;
+          saveButton.textContent = 'Lưu thông tin';
+        }
+      });
+    }
 
     if (btnCancelDelete && modalDeleteConfirm) {
       btnCancelDelete.addEventListener('click', () => {
@@ -1195,8 +1239,24 @@ export class ModalsComponent {
     this.detailTag.textContent = this.getTagLabel(meal.meal_type);
     this.detailCaption.textContent = meal.caption || `“${meal.dish_name || 'Món ngon'}”`;
 
+    const canEdit = Boolean(this.currentUser?.id && meal.user_id === this.currentUser.id);
+    const editButton = document.getElementById('btn-edit-photo');
+    const editForm = document.getElementById('photo-edit-form');
+    if (editButton) editButton.classList.toggle('hidden', !canEdit);
+    if (editForm) {
+      editForm.classList.add('hidden');
+      editForm.querySelector('#photo-edit-dish').value = meal.dish_name || '';
+      editForm.querySelector('#photo-edit-caption').value = meal.caption || '';
+      editForm.querySelector('#photo-edit-meal-type').value = meal.meal_type || 'snack';
+      editForm.querySelector('#photo-edit-location').value = meal.location || '';
+      editForm.querySelector('#photo-edit-calories').value = meal.calories || '';
+    }
     this.photoModal.classList.remove('hidden');
     this.photoModal.classList.add('flex');
+  }
+
+  setCurrentUser(currentUser) {
+    this.currentUser = currentUser;
   }
 
   closePhotoModal() {

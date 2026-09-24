@@ -4,17 +4,17 @@
  * ==============================================================================
  */
 
-import { api } from './services/api.js?v=2026092302';
-import { mealService } from './services/mealService.js?v=2026091999';
-import { profileService } from './services/profileService.js?v=2026092302';
-import { chatService } from './services/chatService.js?v=2026091999';
+import { api } from './services/api.js?v=2026092401';
+import { mealService } from './services/mealService.js?v=2026092401';
+import { profileService } from './services/profileService.js?v=2026092401';
+import { chatService } from './services/chatService.js?v=2026092401';
 import { HeaderComponent } from './components/header.js?v=2026091999';
 import { LocketFeedComponent } from './components/locketFeed.js?v=2026092302';
-import { CameraViewComponent } from './components/cameraView.js?v=2026092303';
+import { CameraViewComponent } from './components/cameraView.js?v=2026092401';
 import { CalendarViewComponent } from './components/calendarView.js?v=2026092302';
-import { ChatViewComponent } from './components/chatView.js?v=2026092102';
+import { ChatViewComponent } from './components/chatView.js?v=2026092401';
 import { NavigationComponent } from './components/navigation.js?v=2026091999';
-import { ModalsComponent } from './components/modals.js?v=2026092302';
+import { ModalsComponent } from './components/modals.js?v=2026092401';
 import { AuthViewComponent } from './components/authView.js?v=2026092100';
 import { soundHelper } from './utils/soundHelper.js?v=2026091999';
 import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
@@ -175,7 +175,8 @@ class App {
       (mealId) => this.handleDeleteMeal(mealId),
       (partnerId) => this.handleRemoveCouple(partnerId),
       () => this.handleDeleteAccount(),
-      (requesterId, approve) => this.handleConnectionRequest(requesterId, approve)
+      (requesterId, approve) => this.handleConnectionRequest(requesterId, approve),
+      (meal, details) => this.handleUpdateMeal(meal, details)
     );
 
     // 2. Header
@@ -208,7 +209,8 @@ class App {
       (payload) => this.handleChatMessage(payload),
       () => this.openProfileModal(),
       (meal) => this.modals.openPhotoModal(meal),
-      (partner) => this.openNicknameModal(partner)
+      (partner) => this.openNicknameModal(partner),
+      (messageId) => this.handleDeleteMessage(messageId)
     );
 
     this.navigation = new NavigationComponent((tabId) => {
@@ -249,6 +251,7 @@ class App {
 
   render() {
     if (!this.currentUser) return;
+    this.modals.setCurrentUser(this.currentUser);
     this.header.render(this.currentUser);
     this.renderPartnerFeed();
     this.calendarView.setContext(this.currentUser, this.connections);
@@ -723,6 +726,36 @@ class App {
     }
   }
 
+  async handleUpdateMeal(meal, details) {
+    const updated = await mealService.updateMealDetails(meal, details);
+    this.meals = this.meals.map(item => String(item.id) === String(updated.id) ? updated : item);
+    api.setLocal('ourmam_meals', this.meals);
+    this.calendarView.setMeals(this.meals);
+    this.renderPartnerFeed();
+    this.modals.openPhotoModal(updated);
+    this.showToast('Đã cập nhật thông tin ảnh.');
+    return updated;
+  }
+
+  async handleDeleteMessage(messageId) {
+    try {
+      const deleted = await api.deleteOwnMessage(messageId);
+      if (!deleted) {
+        this.showToast('Chỉ người gửi mới có thể xóa tin nhắn này.');
+        return false;
+      }
+      this.messages = this.messages.filter(message => String(message.id) !== String(messageId));
+      api.setLocal('ourmam_messages', this.messages);
+      this.chatView.render(this.messages, this.currentUser?.id, this.connections, this.currentUser);
+      this.showToast('Đã xóa tin nhắn.');
+      return true;
+    } catch (error) {
+      console.warn('Message deletion error:', error);
+      this.showToast('Không thể xóa tin nhắn.');
+      return false;
+    }
+  }
+
   getDefaultCaption(tag) {
     switch (tag) {
       case 'breakfast': return "Bữa sáng ấm áp cùng nhau ☀️";
@@ -750,6 +783,21 @@ class App {
     }, 2200);
   }
 
+  showPhotoNotification(meal) {
+    const notification = document.getElementById('photo-notification');
+    if (!notification || !meal) return;
+    const name = meal.user_name || 'Bạn bè';
+    notification.textContent = `📸 Ảnh mới từ ${name}`;
+    notification.classList.remove('hidden');
+    notification.onclick = () => {
+      notification.classList.add('hidden');
+      this.navigation.switchTab('tab-camera');
+      document.getElementById('locket-feed-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    clearTimeout(this._photoNotificationTimer);
+    this._photoNotificationTimer = setTimeout(() => notification.classList.add('hidden'), 4500);
+  }
+
   initRealtime() {
     api.subscribeToMeals(
       (newMeal) => {
@@ -757,7 +805,7 @@ class App {
           this.meals.unshift(newMeal);
           this.render();
           soundHelper.playPop();
-          this.showToast("🎉 Món mới từ " + (newMeal.user_name || "bạn bè"));
+          if (newMeal.user_id !== this.currentUser?.id) this.showPhotoNotification(newMeal);
         }
       },
       (deletedMeal) => {
@@ -771,6 +819,11 @@ class App {
     // ⚡ High-speed WebSocket Realtime Subscription
     api.subscribeToMessages((newMsg) => {
       this.handleIncomingMessage(newMsg);
+    }, (deletedMessage) => {
+      if (!deletedMessage?.id) return;
+      this.messages = this.messages.filter(message => String(message.id) !== String(deletedMessage.id));
+      api.setLocal('ourmam_messages', this.messages);
+      this.chatView.render(this.messages, this.currentUser?.id, this.connections, this.currentUser);
     });
 
     // ⚡ High-speed Smart Polling Fallback (Every 2.5s on Chat tab, every 10s otherwise)

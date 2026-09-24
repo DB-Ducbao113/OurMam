@@ -763,6 +763,30 @@ class ApiService {
     }
   }
 
+  async deleteOwnMessage(messageId) {
+    if (!this.client || !messageId) return false;
+    const { data, error } = await this.client.rpc('delete_own_message', {
+      target_message_id: String(messageId)
+    });
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  async updateOwnMealDetails(meal, details) {
+    if (!this.client || !meal?.id) throw new Error('Không thể xác định ảnh cần sửa.');
+    const { data, error } = await this.client.rpc('update_own_meal_details', {
+      target_meal_id: String(meal.id),
+      new_dish_name: details.dish_name,
+      new_caption: details.caption,
+      new_meal_type: details.meal_type,
+      new_location: details.location,
+      new_calories: details.calories
+    });
+    if (error) throw error;
+    if (!data) throw new Error('Bạn chỉ có thể sửa ảnh do mình đăng.');
+    return data;
+  }
+
   // ==================== REALTIME SUBSCRIPTIONS ====================
   subscribeToMeals(callback, onDeleteCallback) {
     if (!this.client) return;
@@ -777,7 +801,7 @@ class ApiService {
       .subscribe();
   }
 
-  subscribeToMessages(callback) {
+  subscribeToMessages(callback, onDeleteCallback) {
     if (!this.client) return;
     
     // Clear any previous chat channel
@@ -802,6 +826,9 @@ class ApiService {
         if (payload?.new) {
           callback(payload.new);
         }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, payload => {
+        if (onDeleteCallback && payload?.old) onDeleteCallback(payload.old);
       })
       .subscribe((status) => {
         console.log("⚡ Supabase Chat Realtime Status:", status);

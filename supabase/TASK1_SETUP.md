@@ -8,6 +8,8 @@ Run `migrations/202609230001_task1_account_and_couple_constraints.sql` in the Su
 
 Run `migrations/202609230002_task2_connection_approval.sql` as well. It changes code-based connections into pending requests and allows only the addressed account to accept or reject them. Apply both migrations before the matching frontend deployment is used.
 
+Run `migrations/202609240001_task2_chat_and_task3_edit_meals.sql` to enable owner-only message deletion and owner-only meal detail edits from the photo viewer. Apply it before using those controls in the new frontend.
+
 The migration stops if existing accepted couple rows already give one account multiple partners. Resolve those rows in `public.connections`, then run the migration again. It does not delete or rewrite existing relationships automatically.
 
 ## Deploy the account deletion function

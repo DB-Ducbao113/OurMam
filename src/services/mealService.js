@@ -5,7 +5,7 @@
  * ==============================================================================
  */
 
-import { api } from './api.js';
+import { api } from './api.js?v=2026092401';
 import { INITIAL_MEALS } from '../constants/mockData.js';
 
 const STORAGE_KEY = 'ourmam_meals';
@@ -50,6 +50,10 @@ class MealService {
 
   async deleteMeal(mealId) {
     return await api.deleteMeal(mealId);
+  }
+
+  async updateMealDetails(meal, details) {
+    return await api.updateOwnMealDetails(meal, details);
   }
 }
 

@@ -174,9 +174,9 @@ export class CameraViewComponent {
 
   getTimeBasedTag(date = new Date()) {
     const hour = date.getHours();
-    if (hour >= 7 && hour < 12) return 'breakfast';
-    if (hour >= 12 && hour < 16) return 'lunch';
-    if (hour >= 16 && hour < 22) return 'dinner';
+    if (hour >= 6 && hour < 11) return 'breakfast';
+    if (hour >= 11 && hour < 15) return 'lunch';
+    if (hour >= 17 && hour < 22) return 'dinner';
     return 'snack';
   }
 

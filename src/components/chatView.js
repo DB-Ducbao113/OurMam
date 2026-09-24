@@ -30,12 +30,13 @@ function formatChatTime(dateStr) {
 }
 
 export class ChatViewComponent {
-  constructor(onSendMessage, onOpenConnectModal, onOpenPhotoModal, onOpenNicknameModal) {
+  constructor(onSendMessage, onOpenConnectModal, onOpenPhotoModal, onOpenNicknameModal, onDeleteMessage) {
     this.container = document.getElementById('tab-chat');
     this.onSendMessage = onSendMessage;
     this.onOpenConnectModal = onOpenConnectModal;
     this.onOpenPhotoModal = onOpenPhotoModal;
     this.onOpenNicknameModal = onOpenNicknameModal;
+    this.onDeleteMessage = onDeleteMessage;
 
     this.currentView = 'list'; // 'list' | 'room'
     this.activeFriendId = null;
@@ -576,6 +577,9 @@ export class ChatViewComponent {
             ` : ''}
           </div>
         </div>
+        ${isMe && !isSending && !String(msg.id || '').startsWith('temp-') ? `
+          <button type="button" data-delete-message="${msg.id}" class="ml-1 px-1.5 py-0.5 text-[10px] text-stone-400 hover:text-rose-600" aria-label="Xóa tin nhắn của bạn">Xóa tin nhắn</button>
+        ` : ''}
       </div>
     `;
 
@@ -593,6 +597,20 @@ export class ChatViewComponent {
           });
         });
       }
+    }
+
+    const deleteButton = msgEl.querySelector('[data-delete-message]');
+    if (deleteButton) {
+      deleteButton.addEventListener('click', async () => {
+        if (!window.confirm('Xóa tin nhắn này cho cả hai người?')) return;
+        deleteButton.disabled = true;
+        deleteButton.textContent = 'Đang xóa…';
+        const deleted = await this.onDeleteMessage?.(msg.id);
+        if (!deleted) {
+          deleteButton.disabled = false;
+          deleteButton.textContent = 'Xóa tin nhắn';
+        }
+      });
     }
 
     return msgEl;
