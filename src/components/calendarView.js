@@ -281,13 +281,22 @@ export class CalendarViewComponent {
             card.type = 'button';
             card.className = 'relative aspect-square overflow-hidden rounded-xl text-left';
             const time = new Date(meal.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            card.innerHTML = `<img class="w-full h-full object-cover" src="${meal.photo_url}" alt="${meal.dish_name || 'Món ngon'}"><span class="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[9px] text-white truncate">${time} · ${meal.dish_name || 'Món ngon'}</span><span class="btn-cal-item-delete absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center" title="Xóa ảnh"><span class="material-symbols-outlined text-[12px]">delete</span></span>`;
+            const isOwner = Boolean(this.currentUser?.id && meal.user_id === this.currentUser.id);
+            const deleteBtnHtml = isOwner 
+              ? `<span class="btn-cal-item-delete absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-xs" title="Xóa ảnh"><span class="material-symbols-outlined text-[12px]">delete</span></span>`
+              : '';
+            card.innerHTML = `<img class="w-full h-full object-cover" src="${meal.photo_url}" alt="${meal.dish_name || 'Món ngon'}"><span class="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[9px] text-white truncate">${time} · ${meal.dish_name || 'Món ngon'}</span>${deleteBtnHtml}`;
             card.addEventListener('click', () => this.onSelectMeal?.(meal));
-            card.querySelector('.btn-cal-item-delete').addEventListener('click', event => {
-              event.stopPropagation();
-              if (this.onDeleteMealRequest) this.onDeleteMealRequest(meal);
-              else this.onSelectMeal?.(meal);
-            });
+            if (isOwner) {
+              const delBtn = card.querySelector('.btn-cal-item-delete');
+              if (delBtn) {
+                delBtn.addEventListener('click', event => {
+                  event.stopPropagation();
+                  if (this.onDeleteMealRequest) this.onDeleteMealRequest(meal);
+                  else this.onSelectMeal?.(meal);
+                });
+              }
+            }
             grid.appendChild(card);
           });
           group.appendChild(grid);

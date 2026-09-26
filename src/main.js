@@ -20,6 +20,7 @@ import { soundHelper } from './utils/soundHelper.js';
 import { getUserAvatar } from './utils/avatarHelper.js';
 import { compressImageFile, dataUrlToBlob } from './utils/imageCompressor.js';
 import { getCurrentLocationName } from './utils/locationHelper.js';
+import { calculateCoupleStreak } from './utils/streakHelper.js';
 
 class App {
   constructor() {
@@ -113,6 +114,11 @@ class App {
     // 3. Fetch Meals & Chat
     this.meals = await mealService.getMeals();
     this.messages = await chatService.getMessages();
+
+    // 4. Load saved notifications into Header
+    const savedNotifs = api.getLocal('ourmam_notifications', []);
+    this.header.setNotifications(savedNotifs);
+
     this.renderPartnerFeed();
   }
 
@@ -179,18 +185,22 @@ class App {
       (meal, details) => this.handleUpdateMeal(meal, details)
     );
 
-    // 2. Header
-    this.header = new HeaderComponent(() => this.openProfileModal());
+    // 2. Header (with Profile modal & meal viewer from notifications)
+    this.header = new HeaderComponent(
+      () => this.openProfileModal(),
+      (meal) => this.modals.openPhotoModal(meal)
+    );
 
-    // 3. Locket Feed
+    // 3. Locket Feed (with edit meal support)
     this.locketFeed = new LocketFeedComponent(
-      (meal) => this.modals.openPhotoModal(meal),
+      (meal, startEditing = false) => this.modals.openPhotoModal(meal, startEditing),
       (meal, emoji, label) => this.handleReaction(meal, emoji, label),
       (meal, text) => this.handleQuickReply(meal, text),
       () => this.handleFocusCamera(),
       () => this.openProfileModal(),
       (meal) => this.modals.openDeleteConfirm(meal),
-      () => this.navigation.switchTab('tab-calendar')
+      () => this.navigation.switchTab('tab-calendar'),
+      (meal) => this.modals.openPhotoModal(meal, true)
     );
 
     // 4. Camera View
@@ -251,6 +261,13 @@ class App {
 
   render() {
     if (!this.currentUser) return;
+    const partner = this.getPartnerProfile();
+    const dynamicStreak = calculateCoupleStreak(this.meals, this.currentUser, partner);
+    if (this.currentUser) {
+      this.currentUser.streak_count = dynamicStreak;
+      api.setLocal('ourmam_current_user', this.currentUser);
+    }
+
     this.modals.setCurrentUser(this.currentUser);
     this.header.render(this.currentUser);
     this.renderPartnerFeed();
@@ -258,7 +275,6 @@ class App {
     this.calendarView.setMeals(this.meals);
     this.chatView.render(this.messages, this.currentUser.id, this.connections, this.currentUser);
 
-    const partner = this.getPartnerProfile();
     if (partner) {
       this.cameraView.updatePartnerTitle(partner.display_name);
     } else {
@@ -291,7 +307,7 @@ class App {
       if (calTitleEl) calTitleEl.textContent = "Nhật Ký Bữa Ăn";
     }
 
-    if (streakEl) streakEl.textContent = this.currentUser.streak_count || 0;
+    if (streakEl) streakEl.textContent = dynamicStreak;
     if (totalMealsEl) totalMealsEl.textContent = `${this.meals.length} món`;
     if (peekBadgeEl) peekBadgeEl.textContent = Math.max(0, this.meals.length - 1);
     if (peekBtn) {
@@ -713,6 +729,11 @@ class App {
 
   async handleDeleteMeal(mealId) {
     if (!mealId) return;
+    const mealToDelete = this.meals.find(m => String(m.id) === String(mealId));
+    if (mealToDelete && this.currentUser?.id && mealToDelete.user_id !== this.currentUser.id) {
+      this.showToast('Bạn chỉ có quyền xoá ảnh do chính mình đăng!');
+      return;
+    }
     try {
       soundHelper.playPop();
       const success = await mealService.deleteMeal(mealId);
@@ -789,18 +810,44 @@ class App {
   }
 
   showPhotoNotification(meal) {
+    if (!meal) return;
+    const name = meal.user_name || 'Người thương';
+    const dish = meal.dish_name || 'Món ngon hôm nay';
+
+    // 1. Add notification to Header Bell dropdown
+    if (this.header && typeof this.header.addNotification === 'function') {
+      this.header.addNotification({
+        id: 'notif-' + meal.id,
+        title: `📸 ${name} vừa đăng món mới!`,
+        desc: dish,
+        time: meal.created_at || new Date().toISOString(),
+        photo_url: meal.photo_url,
+        meal: meal
+      });
+    }
+
+    // 2. Show floating popup notification banner
     const notification = document.getElementById('photo-notification');
-    if (!notification || !meal) return;
-    const name = meal.user_name || 'Bạn bè';
-    notification.textContent = `📸 Ảnh mới từ ${name}`;
-    notification.classList.remove('hidden');
-    notification.onclick = () => {
-      notification.classList.add('hidden');
-      this.navigation.switchTab('tab-camera');
-      document.getElementById('locket-feed-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-    clearTimeout(this._photoNotificationTimer);
-    this._photoNotificationTimer = setTimeout(() => notification.classList.add('hidden'), 4500);
+    const notificationText = document.getElementById('photo-notification-text');
+    if (notification) {
+      if (notificationText) {
+        notificationText.textContent = `📸 ${name} vừa đăng: “${dish}”!`;
+      } else {
+        notification.textContent = `📸 ${name} vừa đăng: “${dish}”!`;
+      }
+      notification.classList.remove('hidden');
+      notification.classList.add('flex');
+      notification.onclick = () => {
+        notification.classList.add('hidden');
+        notification.classList.remove('flex');
+        this.modals.openPhotoModal(meal);
+      };
+      clearTimeout(this._photoNotificationTimer);
+      this._photoNotificationTimer = setTimeout(() => {
+        notification.classList.add('hidden');
+        notification.classList.remove('flex');
+      }, 5000);
+    }
   }
 
   initRealtime() {

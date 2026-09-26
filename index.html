@@ -127,7 +127,10 @@
 
     <!-- ==================== TOP APP BAR ==================== -->
     <header class="fixed top-0 inset-x-0 mx-auto w-full max-w-[540px] md:absolute z-40 flex items-center justify-between px-margin py-3 bg-surface/90 backdrop-blur-md border-b border-outline-variant/20 shadow-sm md:rounded-t-[2.5rem]">
-      <button id="photo-notification" type="button" class="hidden absolute top-full left-1/2 -translate-x-1/2 mt-1 px-3 py-1.5 rounded-full bg-stone-900/90 text-white text-[10px] font-semibold shadow-lg whitespace-nowrap cursor-pointer" aria-live="polite"></button>
+      <button id="photo-notification" type="button" class="hidden absolute top-full left-1/2 -translate-x-1/2 mt-2 px-4 py-2 rounded-2xl bg-stone-900/95 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 z-50 cursor-pointer active:scale-95 transition-all border border-white/10" aria-live="polite">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+        <span id="photo-notification-text">📸 Đối phương vừa đăng món mới!</span>
+      </button>
       
       <!-- Profile Info & Switcher Button -->
       <div id="profile-switcher-btn" class="flex items-center space-x-2.5 cursor-pointer active:scale-95 transition-transform duration-150">
@@ -175,6 +178,28 @@
 
       <!-- Trailing Action Cluster -->
       <div class="flex items-center space-x-1.5">
+        <!-- Notification Bell Button with Red Dot Badge -->
+        <div class="relative">
+          <button id="btn-notifications" type="button" class="relative w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high cursor-pointer" title="Thông báo bữa ăn mới" aria-label="Thông báo">
+            <span class="material-symbols-outlined text-lg">notifications</span>
+            <span id="header-notif-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+          </button>
+
+          <!-- Notification Dropdown Menu -->
+          <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-stone-200/80 p-3 z-50 flex flex-col gap-2 origin-top-right animate-scale-up">
+            <div class="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base text-[#FF6433]">notifications_active</span>
+                <h4 class="text-xs font-bold text-stone-900">Thông Báo Bữa Ăn</h4>
+              </div>
+              <button id="btn-clear-notifs" type="button" class="text-[10px] text-stone-400 hover:text-stone-600 font-semibold cursor-pointer">Đã đọc</button>
+            </div>
+            <div id="notif-list-container" class="max-h-60 overflow-y-auto flex flex-col gap-1.5 py-1">
+              <p id="notif-empty-text" class="text-xs text-stone-400 text-center py-4">Chưa có thông báo mới nào 🔔</p>
+            </div>
+          </div>
+        </div>
+
         <button id="btn-share-app" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:scale-95 transition-transform hover:bg-surface-container-high cursor-pointer" title="Chia sẻ ứng dụng">
           <span class="material-symbols-outlined text-lg">ios_share</span>
         </button>

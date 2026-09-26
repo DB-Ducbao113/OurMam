@@ -12,7 +12,7 @@ import { soundHelper } from '../utils/soundHelper.js';
 import { getUserAvatar } from '../utils/avatarHelper.js';
 
 export class LocketFeedComponent {
-  constructor(onSelectMeal, onSendReaction, onQuickReply, onFocusCamera, onOpenConnect, onDeleteMealRequest, onOpenHistory) {
+  constructor(onSelectMeal, onSendReaction, onQuickReply, onFocusCamera, onOpenConnect, onDeleteMealRequest, onOpenHistory, onEditMealRequest) {
     this.cardsContainer = document.getElementById('locket-feed-cards');
     this.emptyStateEl = document.getElementById('locket-feed-empty');
     this.emptyTitleEl = document.getElementById('locket-empty-title');
@@ -34,6 +34,7 @@ export class LocketFeedComponent {
     this.onOpenConnect = onOpenConnect;
     this.onDeleteMealRequest = onDeleteMealRequest;
     this.onOpenHistory = onOpenHistory;
+    this.onEditMealRequest = onEditMealRequest;
 
     this.meals = [];
     this.partner = null;
@@ -327,12 +328,16 @@ export class LocketFeedComponent {
             </button>
             
             <!-- Dropdown Menu -->
-            <div class="dropdown-menu hidden absolute right-0 top-full mt-1.5 w-32 bg-white rounded-2xl shadow-lg border border-outline-variant/30 py-1.5 z-50 flex flex-col origin-top-right animate-fade-in">
+            <div class="dropdown-menu hidden absolute right-0 top-full mt-1.5 w-36 bg-white rounded-2xl shadow-lg border border-outline-variant/30 py-1.5 z-50 flex flex-col origin-top-right animate-fade-in">
               <button type="button" class="btn-card-save-meal flex items-center gap-2 px-3.5 py-2 w-full hover:bg-stone-50 text-stone-700 text-xs font-semibold text-left transition-colors">
                 <span class="material-symbols-outlined text-[17px]">download</span>
                 Lưu ảnh
               </button>
               ${isMe ? `
+              <button type="button" class="btn-card-edit-meal flex items-center gap-2 px-3.5 py-2 w-full hover:bg-orange-50 text-stone-700 text-xs font-semibold text-left transition-colors">
+                <span class="material-symbols-outlined text-[17px] text-[#FF6433]">edit</span>
+                Sửa thông tin
+              </button>
               <div class="w-full h-[1px] bg-outline-variant/30 my-0.5"></div>
               <button type="button" class="btn-card-delete-meal flex items-center gap-2 px-3.5 py-2 w-full hover:bg-rose-50 text-rose-600 text-xs font-semibold text-left transition-colors">
                 <span class="material-symbols-outlined text-[17px]">delete</span>
@@ -450,6 +455,20 @@ export class LocketFeedComponent {
           .catch(err => console.error("Download failed", err));
       });
     }
+
+    // Bind Edit Meal Button Click -> Open photo edit modal
+    const editBtns = card.querySelectorAll('.btn-card-edit-meal');
+    editBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown?.classList.add('hidden');
+        if (this.onEditMealRequest) {
+          this.onEditMealRequest(meal);
+        } else if (this.onSelectMeal) {
+          this.onSelectMeal(meal, true);
+        }
+      });
+    });
 
     // Bind Delete Buttons Click -> Open delete confirmation modal
     const deleteBtns = card.querySelectorAll('.btn-card-delete-meal');

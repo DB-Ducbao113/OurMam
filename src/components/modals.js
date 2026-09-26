@@ -1255,7 +1255,7 @@ export class ModalsComponent {
     }
   }
 
-  openPhotoModal(meal) {
+  openPhotoModal(meal, startEditing = false) {
     if (!this.photoModal || !meal) return;
     this.currentPhotoMeal = meal;
     this.detailImg.src = meal.photo_url;
@@ -1268,14 +1268,28 @@ export class ModalsComponent {
     const canEdit = Boolean(this.currentUser?.id && meal.user_id === this.currentUser.id);
     const editButton = document.getElementById('btn-edit-photo');
     const editForm = document.getElementById('photo-edit-form');
+    const btnDeletePhotoTop = document.getElementById('btn-delete-photo-modal');
+    const btnDeletePhotoAction = document.getElementById('btn-delete-photo-action');
+
+    // Only author can edit or delete this photo
+    if (btnDeletePhotoTop) btnDeletePhotoTop.classList.toggle('hidden', !canEdit);
+    if (btnDeletePhotoAction) btnDeletePhotoAction.classList.toggle('hidden', !canEdit);
     if (editButton) editButton.classList.toggle('hidden', !canEdit);
+
     if (editForm) {
-      editForm.classList.add('hidden');
       editForm.querySelector('#photo-edit-dish').value = meal.dish_name || '';
-      editForm.querySelector('#photo-edit-caption').value = meal.caption || '';
+      editForm.querySelector('#photo-edit-caption').value = meal.caption ? meal.caption.replace(/^“|”$/g, '') : '';
       editForm.querySelector('#photo-edit-meal-type').value = meal.meal_type || 'snack';
       editForm.querySelector('#photo-edit-location').value = meal.location || '';
       editForm.querySelector('#photo-edit-calories').value = meal.calories || '';
+
+      if (startEditing && canEdit) {
+        editForm.classList.remove('hidden');
+        if (editButton) editButton.classList.add('hidden');
+        setTimeout(() => editForm.querySelector('#photo-edit-dish')?.focus(), 200);
+      } else {
+        editForm.classList.add('hidden');
+      }
     }
     this.photoModal.classList.remove('hidden');
     this.photoModal.classList.add('flex');
@@ -1293,6 +1307,10 @@ export class ModalsComponent {
 
   openDeleteConfirm(meal) {
     if (!meal) return;
+    if (this.currentUser?.id && meal.user_id !== this.currentUser.id) {
+      alert('Bạn chỉ có quyền xoá ảnh do chính mình đăng.');
+      return;
+    }
     this.currentPhotoMeal = meal;
     const modalDeleteConfirm = document.getElementById('delete-confirm-modal');
     if (modalDeleteConfirm) {
