@@ -131,6 +131,26 @@
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
         <span id="photo-notification-text">📸 Đối phương vừa đăng món mới!</span>
       </button>
+
+      <!-- Facebook Messenger-style Heads-Up Floating Message Notification -->
+      <div id="fb-message-notification" class="hidden absolute top-full inset-x-3 mt-2 p-2.5 rounded-2xl bg-white/95 text-stone-800 shadow-2xl backdrop-blur-md border border-stone-200/90 z-50 flex items-center gap-3 cursor-pointer hover:bg-stone-50 active:scale-[0.98] transition-all animate-bounce-in" aria-live="polite">
+        <div class="relative shrink-0">
+          <img id="fb-notif-avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/40" src="https://ui-avatars.com/api/?name=Partner&background=0084FF&color=fff" alt="Avatar">
+          <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0084FF] text-white flex items-center justify-center text-[10px] shadow-sm">
+            <span class="material-symbols-outlined text-[11px] filled">chat</span>
+          </span>
+        </div>
+        <div class="flex-1 min-w-0 pr-1">
+          <div class="flex items-center justify-between">
+            <h5 id="fb-notif-name" class="text-xs font-bold text-stone-900 truncate">Người thương 💕</h5>
+            <span class="text-[10px] text-stone-400 font-medium">Vừa xong</span>
+          </div>
+          <p id="fb-notif-text" class="text-[11px] text-stone-600 truncate mt-0.5 font-medium">Tin nhắn mới...</p>
+        </div>
+        <button id="fb-notif-close" type="button" class="shrink-0 w-6 h-6 rounded-full hover:bg-stone-200/60 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors" title="Đóng">
+          <span class="material-symbols-outlined text-xs">close</span>
+        </button>
+      </div>
       
       <!-- Profile Info & Switcher Button -->
       <div id="profile-switcher-btn" class="flex items-center space-x-2.5 cursor-pointer active:scale-95 transition-transform duration-150">
@@ -517,6 +537,7 @@
       <button id="nav-btn-chat" class="nav-item flex flex-col items-center justify-center text-tertiary py-1.5 px-3 rounded-2xl hover:text-primary transition-all active:scale-95 relative mx-auto w-full max-w-[110px]" data-target="tab-chat">
         <span class="material-symbols-outlined text-2xl">forum</span>
         <span id="chat-unread-dot" class="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-primary-container ring-1 ring-surface-container-lowest"></span>
+        <span id="chat-unread-badge" class="hidden absolute top-0.5 right-4 min-w-[18px] h-[18px] px-1 bg-[#FF6433] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">0</span>
         <span class="text-[11px] font-semibold mt-0.5">Trò chuyện</span>
       </button>
     </nav>
@@ -853,28 +874,41 @@
           “Khoảnh khắc bữa ăn 🍲”
         </p>
 
-        <form id="photo-edit-form" class="hidden grid grid-cols-2 gap-2 rounded-2xl bg-orange-50/70 p-3 border border-orange-100">
-          <label class="col-span-2 text-[10px] font-semibold text-stone-600">Tên món
-            <input id="photo-edit-dish" type="text" maxlength="100" class="mt-1 w-full rounded-xl border-stone-200 text-xs" required>
-          </label>
-          <label class="col-span-2 text-[10px] font-semibold text-stone-600">Chú thích
-            <textarea id="photo-edit-caption" rows="2" maxlength="500" class="mt-1 w-full rounded-xl border-stone-200 text-xs"></textarea>
-          </label>
-          <label class="text-[10px] font-semibold text-stone-600">Loại bữa
-            <select id="photo-edit-meal-type" class="mt-1 w-full rounded-xl border-stone-200 text-xs">
-              <option value="breakfast">Sáng</option><option value="lunch">Trưa</option>
-              <option value="dinner">Tối</option><option value="snack">Ăn vặt</option>
-            </select>
-          </label>
-          <label class="text-[10px] font-semibold text-stone-600">Calories
-            <input id="photo-edit-calories" type="text" maxlength="30" class="mt-1 w-full rounded-xl border-stone-200 text-xs">
-          </label>
-          <label class="col-span-2 text-[10px] font-semibold text-stone-600">Địa điểm
-            <input id="photo-edit-location" type="text" maxlength="120" class="mt-1 w-full rounded-xl border-stone-200 text-xs">
-          </label>
-          <div class="col-span-2 flex justify-end gap-2">
-            <button id="btn-cancel-photo-edit" type="button" class="px-3 py-1.5 rounded-lg bg-white text-stone-600 text-xs font-semibold border border-stone-200">Hủy</button>
-            <button id="btn-save-photo-edit" type="submit" class="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold">Lưu thông tin</button>
+        <form id="photo-edit-form" class="hidden flex flex-col gap-2.5 rounded-2xl bg-orange-50/70 p-3 border border-orange-100 animate-fade-in">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-stone-700">Chỉnh sửa thông tin bữa ăn</span>
+            <!-- Tag Category Selector matching Camera -->
+            <div id="photo-edit-tags" class="flex items-center gap-1 bg-white p-0.5 rounded-full border border-orange-200">
+              <button type="button" class="photo-edit-tag-btn px-2 py-0.5 rounded-full text-[10px] font-semibold text-stone-500 hover:text-primary transition-all cursor-pointer" data-tag="breakfast">☀️ Sáng</button>
+              <button type="button" class="photo-edit-tag-btn active px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF6433] text-white shadow-xs transition-all cursor-pointer" data-tag="lunch">🍱 Trưa</button>
+              <button type="button" class="photo-edit-tag-btn px-2 py-0.5 rounded-full text-[10px] font-semibold text-stone-500 hover:text-primary transition-all cursor-pointer" data-tag="dinner">🌙 Tối</button>
+              <button type="button" class="photo-edit-tag-btn px-2 py-0.5 rounded-full text-[10px] font-semibold text-stone-500 hover:text-primary transition-all cursor-pointer" data-tag="snack">🧋 Ăn Vặt</button>
+            </div>
+            <input type="hidden" id="photo-edit-meal-type" value="lunch">
+          </div>
+
+          <!-- 3 Input Categories matching camera upload -->
+          <!-- 1. Tên món ăn -->
+          <div class="flex items-center space-x-2 bg-white rounded-xl px-2.5 py-1.5 border border-stone-200 focus-within:border-[#FF6433] shadow-xs">
+            <span class="material-symbols-outlined text-primary text-[15px]">restaurant</span>
+            <input id="photo-edit-dish" type="text" maxlength="100" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs font-medium text-stone-800 placeholder:text-stone-400 w-full" placeholder="Nhập tên món ăn hôm nay..." required>
+          </div>
+
+          <!-- 2. Calories -->
+          <div class="flex items-center space-x-2 bg-white rounded-xl px-2.5 py-1.5 border border-stone-200 focus-within:border-orange-500 shadow-xs">
+            <span class="material-symbols-outlined text-orange-500 text-[15px]">local_fire_department</span>
+            <input id="photo-edit-calories" type="text" maxlength="30" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-stone-800 placeholder:text-stone-400 w-full" placeholder="Nhập số Calories (ví dụ: 500 kcal)">
+          </div>
+
+          <!-- 3. Địa điểm -->
+          <div class="flex items-center space-x-2 bg-white rounded-xl px-2.5 py-1.5 border border-stone-200 focus-within:border-emerald-500 shadow-xs">
+            <span class="material-symbols-outlined text-emerald-500 text-[15px]">location_on</span>
+            <input id="photo-edit-location" type="text" maxlength="120" class="bg-transparent border-0 focus:ring-0 focus:outline-none text-xs text-stone-800 placeholder:text-stone-400 w-full" placeholder="Địa điểm (quán ăn, địa chỉ...)">
+          </div>
+
+          <div class="flex justify-end gap-2 pt-1">
+            <button id="btn-cancel-photo-edit" type="button" class="px-3 py-1.5 rounded-xl bg-white text-stone-600 text-xs font-semibold border border-stone-200 active:scale-95 transition-all">Hủy</button>
+            <button id="btn-save-photo-edit" type="submit" class="px-3 py-1.5 rounded-xl bg-primary hover:bg-orange-600 text-white text-xs font-bold active:scale-95 transition-all shadow-xs">Lưu thông tin</button>
           </div>
         </form>
 
@@ -1044,6 +1078,6 @@
   </div>
 
   <!-- Modular Frontend Entry Point (with cache-buster) -->
-  <script type="module" src="src/main.js?v=2026092602"></script>
+  <script type="module" src="src/main.js?v=2026092603"></script>
 </body>
 </html>

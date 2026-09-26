@@ -30,6 +30,7 @@ class App {
     this.messages = [];
     this.session = null;
     this.currentLocketTab = 'auto';
+    this.unreadChatCount = 0;
 
     this.cleanOAuthUrl();
     this.initAuth();
@@ -227,6 +228,7 @@ class App {
       if (tabId === 'tab-camera') this.cameraView.selectDefaultTagForCurrentTime();
       if (tabId === 'tab-calendar') this.calendarView.setMeals(this.meals);
       if (tabId === 'tab-chat') {
+        this.clearUnreadChat();
         if (this.chatView.onTabOpened) {
           this.chatView.onTabOpened();
         }
@@ -670,11 +672,104 @@ class App {
 
     const isMe = newMsg.sender_id === this.currentUser?.id;
     if (!isMe) {
-      soundHelper.playPop();
-      const isChatActive = document.querySelector('#tab-chat')?.classList.contains('active');
+      soundHelper.playMessengerSound();
+      const isChatActive = document.querySelector('#tab-chat')?.classList.contains('active') && !document.hidden;
       if (!isChatActive) {
-        this.showToast(`💬 ${newMsg.sender_name || 'Tin nhắn mới'}: ${newMsg.text || 'Đã gửi 1 ảnh'}`);
+        this.unreadChatCount = (this.unreadChatCount || 0) + 1;
+        this.updateChatUnreadBadge();
+        this.showFacebookMessageNotification(newMsg);
+      } else if (document.hidden) {
+        this.showFacebookMessageNotification(newMsg);
       }
+    }
+  }
+
+  showFacebookMessageNotification(newMsg) {
+    if (!newMsg) return;
+    const name = newMsg.sender_name || 'Người thương 💕';
+    const text = newMsg.text || (newMsg.photo_url ? '📸 [Đã gửi một ảnh]' : 'Tin nhắn mới');
+    const avatar = getUserAvatar(newMsg.sender_avatar, name);
+
+    // 1. In-app Facebook Messenger-style Heads-Up Banner
+    const toast = document.getElementById('fb-message-notification');
+    const avatarEl = document.getElementById('fb-notif-avatar');
+    const nameEl = document.getElementById('fb-notif-name');
+    const textEl = document.getElementById('fb-notif-text');
+
+    if (toast) {
+      if (avatarEl) avatarEl.src = avatar;
+      if (nameEl) nameEl.textContent = name;
+      if (textEl) textEl.textContent = text;
+
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+
+      toast.onclick = (e) => {
+        if (e.target.closest('#fb-notif-close')) return;
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+        this.navigation.switchTab('tab-chat');
+        this.clearUnreadChat();
+        setTimeout(() => {
+          document.getElementById('chat-input')?.focus();
+        }, 300);
+      };
+
+      const closeBtn = document.getElementById('fb-notif-close');
+      if (closeBtn) {
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          toast.classList.add('hidden');
+          toast.classList.remove('flex');
+        };
+      }
+
+      clearTimeout(this._fbNotifTimer);
+      this._fbNotifTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 5500);
+    }
+
+    // 2. Web Browser Native System Notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(`💬 ${name}`, {
+          body: text,
+          icon: avatar,
+          badge: avatar,
+          tag: 'ourmam-chat-msg'
+        });
+        notif.onclick = () => {
+          window.focus();
+          this.navigation.switchTab('tab-chat');
+          this.clearUnreadChat();
+        };
+      } catch (err) {}
+    }
+  }
+
+  updateChatUnreadBadge() {
+    const badge = document.getElementById('chat-unread-badge');
+    const dot = document.getElementById('chat-unread-dot');
+    if (!badge) return;
+    if (this.unreadChatCount > 0) {
+      badge.textContent = this.unreadChatCount > 9 ? '9+' : this.unreadChatCount;
+      badge.classList.remove('hidden');
+      if (dot) dot.classList.add('hidden');
+    } else {
+      badge.classList.add('hidden');
+      if (dot) dot.classList.remove('hidden');
+    }
+  }
+
+  clearUnreadChat() {
+    this.unreadChatCount = 0;
+    this.updateChatUnreadBadge();
+    const toast = document.getElementById('fb-message-notification');
+    if (toast) {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
     }
   }
 

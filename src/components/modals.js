@@ -152,17 +152,39 @@ export class ModalsComponent {
         btnEditPhoto.classList.remove('hidden');
       });
     }
+    const editTagButtons = photoEditForm?.querySelectorAll('.photo-edit-tag-btn');
+    const inputEditMealType = photoEditForm?.querySelector('#photo-edit-meal-type');
+    if (editTagButtons && inputEditMealType) {
+      editTagButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tag = btn.dataset.tag;
+          inputEditMealType.value = tag;
+          editTagButtons.forEach(b => {
+            const isMatch = b.dataset.tag === tag;
+            b.classList.toggle('active', isMatch);
+            b.classList.toggle('bg-[#FF6433]', isMatch);
+            b.classList.toggle('text-white', isMatch);
+            b.classList.toggle('font-bold', isMatch);
+            b.classList.toggle('shadow-xs', isMatch);
+            b.classList.toggle('text-stone-500', !isMatch);
+            b.classList.toggle('font-semibold', !isMatch);
+          });
+        });
+      });
+    }
+
     if (photoEditForm) {
       photoEditForm.addEventListener('submit', async event => {
         event.preventDefault();
         if (!this.currentPhotoMeal || !this.onUpdateMeal) return;
         const saveButton = photoEditForm.querySelector('#btn-save-photo-edit');
+        const dishName = photoEditForm.querySelector('#photo-edit-dish')?.value.trim() || '';
         const details = {
-          dish_name: photoEditForm.querySelector('#photo-edit-dish').value.trim(),
-          caption: photoEditForm.querySelector('#photo-edit-caption').value.trim(),
-          meal_type: photoEditForm.querySelector('#photo-edit-meal-type').value,
-          location: photoEditForm.querySelector('#photo-edit-location').value.trim(),
-          calories: photoEditForm.querySelector('#photo-edit-calories').value.trim()
+          dish_name: dishName,
+          caption: `“${dishName}”`,
+          meal_type: inputEditMealType?.value || 'lunch',
+          location: photoEditForm.querySelector('#photo-edit-location')?.value.trim() || '',
+          calories: photoEditForm.querySelector('#photo-edit-calories')?.value.trim() || ''
         };
         saveButton.disabled = true;
         saveButton.textContent = 'Đang lưu…';
@@ -1277,16 +1299,35 @@ export class ModalsComponent {
     if (editButton) editButton.classList.toggle('hidden', !canEdit);
 
     if (editForm) {
-      editForm.querySelector('#photo-edit-dish').value = meal.dish_name || '';
-      editForm.querySelector('#photo-edit-caption').value = meal.caption ? meal.caption.replace(/^“|”$/g, '') : '';
-      editForm.querySelector('#photo-edit-meal-type').value = meal.meal_type || 'snack';
-      editForm.querySelector('#photo-edit-location').value = meal.location || '';
-      editForm.querySelector('#photo-edit-calories').value = meal.calories || '';
+      const dishInput = editForm.querySelector('#photo-edit-dish');
+      const caloriesInput = editForm.querySelector('#photo-edit-calories');
+      const locationInput = editForm.querySelector('#photo-edit-location');
+      const typeInput = editForm.querySelector('#photo-edit-meal-type');
+      const tagButtons = editForm.querySelectorAll('.photo-edit-tag-btn');
+
+      if (dishInput) dishInput.value = meal.dish_name || (meal.caption ? meal.caption.replace(/^“|”$/g, '') : '');
+      if (caloriesInput) caloriesInput.value = meal.calories || '';
+      if (locationInput) locationInput.value = meal.location || '';
+      const currentTag = meal.meal_type || 'lunch';
+      if (typeInput) typeInput.value = currentTag;
+
+      if (tagButtons) {
+        tagButtons.forEach(b => {
+          const isMatch = b.dataset.tag === currentTag;
+          b.classList.toggle('active', isMatch);
+          b.classList.toggle('bg-[#FF6433]', isMatch);
+          b.classList.toggle('text-white', isMatch);
+          b.classList.toggle('font-bold', isMatch);
+          b.classList.toggle('shadow-xs', isMatch);
+          b.classList.toggle('text-stone-500', !isMatch);
+          b.classList.toggle('font-semibold', !isMatch);
+        });
+      }
 
       if (startEditing && canEdit) {
         editForm.classList.remove('hidden');
         if (editButton) editButton.classList.add('hidden');
-        setTimeout(() => editForm.querySelector('#photo-edit-dish')?.focus(), 200);
+        setTimeout(() => dishInput?.focus(), 200);
       } else {
         editForm.classList.add('hidden');
       }
