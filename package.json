@@ -1,0 +1,22 @@
+{
+  "name": "ourmam",
+  "version": "1.0.0",
+  "description": "OurMam - Ứng dụng chia sẻ bữa ăn Locket và nhật ký ẩm thực cho cặp đôi",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve -l 3000 .",
+    "start": "npx serve -l 3000 .",
+    "check": "node --check src/main.js src/components/*.js src/services/*.js src/utils/*.js",
+    "test": "npm run check"
+  },
+  "keywords": [
+    "locket",
+    "food-diary",
+    "couples",
+    "pwa",
+    "supabase",
+    "vanilla-js"
+  ],
+  "author": "DB-Ducbao113",
+  "license": "MIT"
+}

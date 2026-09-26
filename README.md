@@ -82,6 +82,85 @@
 
 ---
 
+## 📂 Cấu Trúc Thư Mục Dự Án (Project Structure)
+
+```text
+OurMam/
+├── index.html                    # Single Page Application HTML shell
+├── package.json                  # Cấu hình dự án, npm scripts (dev, test, check)
+├── vercel.json                   # Cấu hình triển khai Vercel (Cache-Control headers)
+├── manifest.json                 # Cấu hình PWA Progressive Web App
+├── sw.js                         # PWA Service Worker
+├── privacy.html                  # Chính sách bảo mật & quyền riêng tư
+├── .editorconfig                 # Chuẩn hóa format code giữa các IDE
+├── .gitignore                    # Bộ lọc git thông minh cho source & docs
+├── AGENTS.md                     # Hướng dẫn quy chuẩn cho AI Coding Agents
+├── README.md                     # Tài liệu tổng quan dự án
+│
+├── docs/                         # 📖 Tài liệu kiến trúc & đặc tả kỹ thuật
+│   ├── architecture/             # Kiến trúc hệ thống & ERD
+│   │   ├── ARCHITECTURE.md
+│   │   └── ERD.md
+│   ├── api/                      # Đặc tả API contracts
+│   │   └── API_CONTRACT.md
+│   └── setup/                    # Hướng dẫn thiết lập hệ thống
+│       └── TASK1_SETUP.md
+│
+├── src/                          # 💻 Mã nguồn ứng dụng Frontend
+│   ├── assets/                   # Tài nguyên đồ họa, hình ảnh tĩnh
+│   │   └── login-bg.png
+│   ├── components/               # Các View Controller & UI Components
+│   │   ├── authView.js           # Màn hình đăng nhập / đăng ký
+│   │   ├── calendarView.js       # Màn hình Lịch sử bữa ăn
+│   │   ├── cameraView.js         # Khung ngắm camera & chụp ảnh bữa ăn
+│   │   ├── chatView.js           # Phòng trò chuyện & tin nhắn tức thì
+│   │   ├── header.js             # Thanh tiêu đề, thông báo & profile switcher
+│   │   ├── locketFeed.js         # Lướt khoảnh khắc phong cách Locket
+│   │   ├── modals.js             # Toàn bộ modal hộp thoại (xem ảnh, profile, kết bạn)
+│   │   └── navigation.js         # Thanh điều hướng chuyển tab dưới cùng
+│   ├── config/                   # Cấu hình môi trường & Supabase keys
+│   │   └── env.js
+│   ├── constants/                # Hằng số, mock data & bảng màu theme
+│   │   ├── mockData.js
+│   │   └── theme.js
+│   ├── services/                 # Tầng giao tiếp dữ liệu & Supabase BaaS
+│   │   ├── api.js                # Supabase client wrapper & local storage
+│   │   ├── chatService.js        # Dịch vụ tin nhắn & realtime broadcast
+│   │   ├── mealService.js        # Dịch vụ quản lý bữa ăn & upload ảnh
+│   │   └── profileService.js     # Dịch vụ kết nối bạn bè & profile
+│   ├── styles/                   # Stylesheet & CSS tokens
+│   │   ├── animations.css
+│   │   ├── components.css
+│   │   └── main.css
+│   ├── utils/                    # Các module tiện ích dùng chung
+│   │   ├── avatarHelper.js       # Xử lý avatar dự phòng & màu sắc
+│   │   ├── cameraHelper.js       # Quản lý luồng WebRTC camera & flash
+│   │   ├── dateHelper.js         # Định dạng thời gian & bữa ăn
+│   │   ├── imageCompressor.js    # Nén ảnh canvas trước khi tải lên
+│   │   ├── locationHelper.js     # Định vị địa chỉ GPS tự động
+│   │   ├── scriptableWidgetCode.js
+│   │   ├── soundHelper.js        # Bộ tổng hợp âm thanh Web Audio API
+│   │   └── streakHelper.js       # Thuật toán tính chuỗi ngày ăn cùng nhau
+│   └── main.js                   # Điểm khởi chạy chính của ứng dụng
+│
+├── supabase/                     # 🗄️ Cấu hình Supabase & Cơ sở dữ liệu PostgreSQL
+│   ├── config.toml               # Cấu hình Supabase CLI
+│   ├── schema.sql                # DDL Database Schema & RLS Policies chuẩn
+│   ├── cleanup_cron.sql          # Tự động hóa dọn dẹp ảnh cũ theo lịch
+│   ├── migrations/               # Các bản migration dữ liệu theo phiên bản
+│   │   ├── 202609230001_task1_account_and_couple_constraints.sql
+│   │   ├── 202609230002_task2_connection_approval.sql
+│   │   └── 202609240001_task2_chat_and_task3_edit_meals.sql
+│   └── functions/                # Supabase Edge Functions (Deno / TypeScript)
+│       └── delete-account/
+│
+└── widgets/                      # 📱 Widget iOS Scriptable (Hiển thị Home Screen)
+    └── ios/
+        └── scriptable_widget.js
+```
+
+---
+
 ## 🚀 Hướng Dẫn Khởi Chạy Local (Quick Start)
 
 1. **Clone repository về máy:**
@@ -91,20 +170,21 @@
    ```
 
 2. **Chạy server phát triển (Development Server):**
-   * Sử dụng Ruby (có sẵn trên macOS):
+   * Sử dụng npm (Khuyến nghị):
      ```bash
-     ruby -run -e httpd . -p 3000
+     npm run dev
      ```
    * Hoặc sử dụng Python:
      ```bash
      python3 -m http.server 3000
      ```
-   * Hoặc Node.js / npx serve:
-     ```bash
-     npx -y serve . -p 3000
-     ```
 
-3. **Mở trình duyệt:**
+3. **Kiểm tra cú pháp code (Syntax Validation):**
+   ```bash
+   npm test
+   ```
+
+4. **Mở trình duyệt:**
    Truy cập địa chỉ: `http://localhost:3000`
 
 ---

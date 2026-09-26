@@ -10,11 +10,11 @@
 *.cert
 
 # ==============================================================================
-# 2. TÀI LIỆU MARKDOWN (CHỈ UPLOAD DUY NHẤT README.MD)
+# 2. TÀI LIỆU MARKDOWN TRONG GỐC (ROOT MARKDOWN)
 # ==============================================================================
-# Chặn tất cả các file .md trong thư mục gốc, chỉ giữ lại README.md
 /*.md
 !/README.md
+!/AGENTS.md
 
 # ==============================================================================
 # 3. THIẾT KẾ & BẢN VẼ PHÁC THẢO (UI DESIGN MOCKUPS - PHƯƠNG ÁN B)
@@ -66,8 +66,4 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ==============================================================================
-# 8. BACKEND & CƠ SỞ DỮ LIỆU NỘI BỘ (KHÔNG UPLOAD BACKEND)
-# ==============================================================================
-backend/
 

@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: yellow; icon-glyph: smile-wink;
-const APP_URL = "https://ourmam-recap.vercel.app";
+const APP_URL = "https://our-mam.vercel.app";
 const SUPABASE_URL = "https://gjdutovmlpxrvwqycvay.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqZHV0b3ZtbHB4cnZ3cXljdmF5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTQ1ODYyMywiZXhwIjoyMTA1MDM0NjIzfQ.A2B19Y2P6NmE-HCeJa1IVPaF4qgDMnNsk7ZDy2AwmOk";
 
