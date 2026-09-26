@@ -4,22 +4,22 @@
  * ==============================================================================
  */
 
-import { api } from './services/api.js?v=2026092401';
-import { mealService } from './services/mealService.js?v=2026092401';
-import { profileService } from './services/profileService.js?v=2026092401';
-import { chatService } from './services/chatService.js?v=2026092401';
-import { HeaderComponent } from './components/header.js?v=2026091999';
-import { LocketFeedComponent } from './components/locketFeed.js?v=2026092302';
-import { CameraViewComponent } from './components/cameraView.js?v=2026092401';
-import { CalendarViewComponent } from './components/calendarView.js?v=2026092302';
-import { ChatViewComponent } from './components/chatView.js?v=2026092401';
-import { NavigationComponent } from './components/navigation.js?v=2026091999';
-import { ModalsComponent } from './components/modals.js?v=2026092401';
-import { AuthViewComponent } from './components/authView.js?v=2026092100';
-import { soundHelper } from './utils/soundHelper.js?v=2026091999';
-import { getUserAvatar } from './utils/avatarHelper.js?v=2026091999';
-import { compressImageFile, dataUrlToBlob } from './utils/imageCompressor.js?v=2026091660';
-import { getCurrentLocationName } from './utils/locationHelper.js?v=2026091660';
+import { api } from './services/api.js';
+import { mealService } from './services/mealService.js';
+import { profileService } from './services/profileService.js';
+import { chatService } from './services/chatService.js';
+import { HeaderComponent } from './components/header.js';
+import { LocketFeedComponent } from './components/locketFeed.js';
+import { CameraViewComponent } from './components/cameraView.js';
+import { CalendarViewComponent } from './components/calendarView.js';
+import { ChatViewComponent } from './components/chatView.js';
+import { NavigationComponent } from './components/navigation.js';
+import { ModalsComponent } from './components/modals.js';
+import { AuthViewComponent } from './components/authView.js';
+import { soundHelper } from './utils/soundHelper.js';
+import { getUserAvatar } from './utils/avatarHelper.js';
+import { compressImageFile, dataUrlToBlob } from './utils/imageCompressor.js';
+import { getCurrentLocationName } from './utils/locationHelper.js';
 
 class App {
   constructor() {
@@ -856,23 +856,17 @@ class App {
   }
 
   registerServiceWorker() {
+    // Purge any stale service worker and caches across all environments
+    // to guarantee clients instantly receive fresh deployments without cache lock
     if ('serviceWorker' in navigator) {
-      // On local development, unregister any stale SWs and clear cache to avoid serving outdated assets
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          for (const reg of regs) {
-            reg.unregister();
-            console.log('Unregistered SW on dev:', reg.scope);
-          }
-        });
-        if ('caches' in window) {
-          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        for (const reg of regs) {
+          reg.unregister();
         }
-      } else {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('OurMam PWA Service Worker Registered:', reg.scope))
-          .catch(err => console.log('SW Registration failed:', err));
-      }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
     }
   }
 }
