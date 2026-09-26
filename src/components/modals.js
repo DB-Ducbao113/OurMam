@@ -846,8 +846,16 @@ export class ModalsComponent {
           </div>
         </div>
 
-        <!-- Log out button -->
+        <!-- Cache clear & Force update -->
         <div class="pt-2">
+          <button id="btn-force-refresh-app" type="button" class="w-full py-2.5 rounded-2xl bg-orange-50 hover:bg-orange-100 text-[#FF6433] text-xs font-bold active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer border border-orange-200">
+            <span class="material-symbols-outlined text-base">refresh</span>
+            <span>Xóa cache & Cập nhật code mới</span>
+          </button>
+        </div>
+
+        <!-- Log out button -->
+        <div class="pt-1">
           <button id="btn-logout-action" type="button" class="w-full py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer border border-stone-200/50">
             <span class="material-symbols-outlined text-base text-[#FF6433]">logout</span>
             <span>Đăng xuất tài khoản</span>
@@ -864,7 +872,7 @@ export class ModalsComponent {
           <span class="text-2xl">🍱</span>
         </div>
         <h4 class="text-xs font-extrabold text-stone-900 tracking-tight">OurMam</h4>
-        <p class="text-[10px] text-stone-500 font-medium">Couple Food Diary & Locket • Phiên bản 1.2.0</p>
+        <p class="text-[10px] text-stone-500 font-medium">Couple Food Diary & Locket • Bản cập nhật 26/09/2026</p>
         <p class="text-[11px] text-stone-600 flex items-center gap-1 justify-center">
           Được làm với <span class="text-[#FF6433]">❤️</span> cho tình yêu và những bữa ăn ngon
         </p>
@@ -1219,7 +1227,25 @@ export class ModalsComponent {
       });
     }
 
-    // 12. Logout Action
+    // 12. Force Refresh & Cache Clear Action
+    const btnForceRefresh = this.profilesContainer.querySelector('#btn-force-refresh-app');
+    if (btnForceRefresh) {
+      btnForceRefresh.addEventListener('click', async () => {
+        btnForceRefresh.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span><span>Đang làm mới...</span>';
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+        }
+        localStorage.removeItem('ourmam_app_version');
+        window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
+      });
+    }
+
+    // 13. Logout Action
     const btnLogout = this.profilesContainer.querySelector('#btn-logout-action');
     if (btnLogout) {
       btnLogout.addEventListener('click', () => {

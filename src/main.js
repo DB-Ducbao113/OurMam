@@ -563,6 +563,11 @@ class App {
       if (idx !== -1) {
         this.meals[idx] = newMeal;
       }
+      api.setLocal('ourmam_meals', this.meals);
+      this.calendarView.setMeals(this.meals);
+      if (this.locketFeed && typeof this.locketFeed.setFilter === 'function') {
+        this.locketFeed.setFilter('all');
+      }
       this.render();
       this.showToast("Đã gửi món ngon lên Locket! 💕");
 

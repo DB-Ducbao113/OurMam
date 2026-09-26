@@ -13,7 +13,7 @@ const STORAGE_KEY = 'ourmam_meals';
 class MealService {
   async getMeals() {
     const data = await api.getMeals();
-    if (data && data.length > 0) {
+    if (Array.isArray(data)) {
       api.setLocal(STORAGE_KEY, data);
       return data;
     }
